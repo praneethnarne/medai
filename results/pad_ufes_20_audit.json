@@ -1,10 +1,14 @@
 {
-  "collection": "PAD-UFES-20 (ISIC collection 406)",
-  "license": "CC-BY",
-  "image_type": "clinical: close-up (smartphone)",
   "n_images": 2298,
   "n_patients": 1373,
   "n_lesions": 1891,
+  "finest_split_unit": "patient",
+  "licenses": {
+    "CC-BY": 2298
+  },
+  "image_types": {
+    "clinical: close-up": 2298
+  },
   "diagnosis_counts": {
     "Basal cell carcinoma": 845,
     "Solar or actinic keratosis": 730,
@@ -44,5 +48,13 @@
     "anatom_site_4": 181,
     "anatom_site_special": 165,
     "anatom_site_5": 23
-  }
+  },
+  "resolution": {
+    "n_with_dims": 2298,
+    "width_min": 147,
+    "width_median": 780,
+    "width_max": 3474
+  },
+  "total_bytes": 230324493,
+  "collection": "pad_ufes_20"
 }

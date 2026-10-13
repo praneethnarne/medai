@@ -1,0 +1,54 @@
+{
+  "n_images": 11720,
+  "n_patients": 0,
+  "n_lesions": 8838,
+  "finest_split_unit": "lesion",
+  "licenses": {
+    "CC-BY-NC": 11720
+  },
+  "image_types": {
+    "dermoscopic": 11719,
+    "null": 1
+  },
+  "diagnosis_counts": {
+    "Nevus": 7737,
+    "Pigmented benign keratosis": 1338,
+    "Melanoma, NOS": 1305,
+    "Basal cell carcinoma": 622,
+    "Squamous cell carcinoma, NOS": 229,
+    "Benign soft tissue proliferations - Vascular": 180,
+    "Dermatofibroma": 160,
+    "Solar or actinic keratosis": 149
+  },
+  "malignancy_counts": {
+    "Benign": 9415,
+    "Malignant": 2156,
+    "Indeterminate": 149
+  },
+  "fitzpatrick_counts": {
+    "unrecorded": 11720
+  },
+  "field_coverage": {
+    "concomitant_biopsy": 11720,
+    "diagnosis_1": 11720,
+    "diagnosis_2": 11720,
+    "diagnosis_confirm_type": 11720,
+    "melanocytic": 11720,
+    "lesion_id": 11720,
+    "diagnosis_3": 11540,
+    "sex": 11377,
+    "age_approx": 11337,
+    "anatom_site_1": 11139,
+    "anatom_site_2": 5916,
+    "anatom_site_3": 2682,
+    "anatom_site_special": 537
+  },
+  "resolution": {
+    "n_with_dims": 11720,
+    "width_min": 600,
+    "width_median": 600,
+    "width_max": 600
+  },
+  "total_bytes": 285880243,
+  "collection": "ham10000"
+}
