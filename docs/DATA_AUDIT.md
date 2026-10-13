@@ -170,3 +170,57 @@ failed request can never leave a partial image behind under a real filename.
 
 `backend/tests/test_download.py` pins this: whole JPEG accepted; truncated, empty,
 non-JPEG and missing files all rejected.
+
+---
+
+# Splits
+
+Built by `backend/src/data/split.py`, seed 42, assignments committed in
+`data/<name>/splits.json`.
+
+The split unit is read from each collection's audit rather than assumed:
+PAD-UFES-20 at **patient** level, HAM10000 at **lesion** level, because that is the
+finest unit each dataset's metadata actually supports. Stratified by triage label with
+`StratifiedGroupKFold`, so the grouping constraint is respected while class balance is
+kept as close as the grouping allows.
+
+
+## ham10000 — split unit: lesion
+
+| Split | Images | Share | Lesions | Malignant | Indeterminate | Benign |
+|---|---:|---:|---:|---:|---:|---:|
+| train | 8,401 | 71.7% | 6,313 | 1,490 | 109 | 6,802 |
+| val | 1,663 | 14.2% | 1,262 | 363 | 26 | 1,274 |
+| test | 1,656 | 14.1% | 1,263 | 303 | 14 | 1,339 |
+
+## pad_ufes_20 — split unit: patient
+
+| Split | Images | Share | Patients | Malignant | Indeterminate | Benign |
+|---|---:|---:|---:|---:|---:|---:|
+| train | 1,657 | 72.1% | 979 | 790 | 535 | 332 |
+| val | 308 | 13.4% | 195 | 136 | 99 | 73 |
+| test | 333 | 14.5% | 199 | 163 | 96 | 74 |
+
+## The melanoma count confirms the triage decision
+
+| | train | val | test |
+|---|---:|---:|---:|
+| PAD-UFES-20 melanoma | 42 | 6 | **4** |
+| HAM10000 melanoma | 897 | 235 | 173 |
+
+Four melanoma images in the phone-photo test set. The estimate in ADR 0005 was five; the
+real number is four. A per-class melanoma recall computed on four examples moves by 25
+percentage points if a single image flips, so it cannot carry a headline — which is
+precisely why malignancy triage is the primary task and why melanoma recall is reported
+only with its confidence interval and support count beside it.
+
+HAM10000 has 173 melanomas in its own test set, so melanoma performance *is* measurable
+in the dermatoscopic domain. That contrast is itself part of the finding: the class that
+matters most clinically is the one the deployment domain can say least about.
+
+## Leakage
+
+`backend/tests/test_split.py` asserts that no patient or lesion appears in more than one
+split, that every image is assigned exactly once, that all three triage classes appear in
+every split, and that re-running the splitter reproduces the committed assignment exactly.
+

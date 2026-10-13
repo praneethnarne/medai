@@ -1,0 +1,67 @@
+{
+  "split_unit": "lesion",
+  "seed": 42,
+  "n_images": 11720,
+  "splits": {
+    "test": {
+      "n_images": 1656,
+      "share": 0.1413,
+      "n_groups": 1263,
+      "triage": {
+        "benign": 1339,
+        "malignant": 303,
+        "indeterminate": 14
+      },
+      "lesion_type": {
+        "nevus": 1103,
+        "benign_keratosis": 186,
+        "melanoma": 173,
+        "basal_cell_carcinoma": 83,
+        "squamous_cell_carcinoma": 47,
+        "vascular": 29,
+        "dermatofibroma": 21,
+        "actinic_keratosis": 14
+      }
+    },
+    "train": {
+      "n_images": 8401,
+      "share": 0.7168,
+      "n_groups": 6313,
+      "triage": {
+        "benign": 6802,
+        "malignant": 1490,
+        "indeterminate": 109
+      },
+      "lesion_type": {
+        "nevus": 5578,
+        "benign_keratosis": 987,
+        "melanoma": 897,
+        "basal_cell_carcinoma": 437,
+        "squamous_cell_carcinoma": 156,
+        "vascular": 122,
+        "dermatofibroma": 115,
+        "actinic_keratosis": 109
+      }
+    },
+    "val": {
+      "n_images": 1663,
+      "share": 0.1419,
+      "n_groups": 1262,
+      "triage": {
+        "benign": 1274,
+        "malignant": 363,
+        "indeterminate": 26
+      },
+      "lesion_type": {
+        "nevus": 1056,
+        "melanoma": 235,
+        "benign_keratosis": 165,
+        "basal_cell_carcinoma": 102,
+        "vascular": 29,
+        "actinic_keratosis": 26,
+        "squamous_cell_carcinoma": 26,
+        "dermatofibroma": 24
+      }
+    }
+  }
+}

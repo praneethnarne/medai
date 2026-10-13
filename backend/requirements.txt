@@ -2,3 +2,4 @@
 requests>=2.32
 certifi>=2024.2
 pytest>=8.0
+scikit-learn>=1.5

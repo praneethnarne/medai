@@ -1,0 +1,61 @@
+{
+  "split_unit": "patient",
+  "seed": 42,
+  "n_images": 2298,
+  "splits": {
+    "test": {
+      "n_images": 333,
+      "share": 0.1449,
+      "n_groups": 199,
+      "triage": {
+        "malignant": 163,
+        "indeterminate": 96,
+        "benign": 74
+      },
+      "lesion_type": {
+        "basal_cell_carcinoma": 133,
+        "actinic_keratosis": 96,
+        "benign_keratosis": 38,
+        "nevus": 36,
+        "squamous_cell_carcinoma": 26,
+        "melanoma": 4
+      }
+    },
+    "train": {
+      "n_images": 1657,
+      "share": 0.7211,
+      "n_groups": 979,
+      "triage": {
+        "malignant": 790,
+        "indeterminate": 535,
+        "benign": 332
+      },
+      "lesion_type": {
+        "basal_cell_carcinoma": 610,
+        "actinic_keratosis": 535,
+        "nevus": 168,
+        "benign_keratosis": 164,
+        "squamous_cell_carcinoma": 138,
+        "melanoma": 42
+      }
+    },
+    "val": {
+      "n_images": 308,
+      "share": 0.134,
+      "n_groups": 195,
+      "triage": {
+        "malignant": 136,
+        "indeterminate": 99,
+        "benign": 73
+      },
+      "lesion_type": {
+        "basal_cell_carcinoma": 102,
+        "actinic_keratosis": 99,
+        "nevus": 40,
+        "benign_keratosis": 33,
+        "squamous_cell_carcinoma": 28,
+        "melanoma": 6
+      }
+    }
+  }
+}
