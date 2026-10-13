@@ -1,3 +1,4 @@
 # Pinned loosely for now; locked once training starts.
 requests>=2.32
 certifi>=2024.2
+pytest>=8.0
