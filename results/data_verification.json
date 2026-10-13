@@ -1,0 +1,28 @@
+[
+  {
+    "collection": "ham10000",
+    "expected": 11720,
+    "present": 11720,
+    "missing": [],
+    "n_missing": 0,
+    "truncated": [],
+    "n_truncated": 0,
+    "n_unexpected_files": 0,
+    "n_partial_files": 0,
+    "bytes_on_disk": 323489723,
+    "ok": true
+  },
+  {
+    "collection": "pad_ufes_20",
+    "expected": 2298,
+    "present": 2298,
+    "missing": [],
+    "n_missing": 0,
+    "truncated": [],
+    "n_truncated": 0,
+    "n_unexpected_files": 0,
+    "n_partial_files": 0,
+    "bytes_on_disk": 237648219,
+    "ok": true
+  }
+]

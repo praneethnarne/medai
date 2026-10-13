@@ -140,3 +140,33 @@ This is fine for an academic project and a portfolio piece. It does mean the res
 be commercialised without retraining on permissively licensed data, and the model card
 must state it.
 
+
+---
+
+# Download integrity
+
+Verified by `backend/src/data/verify.py` into `results/data_verification.json`.
+
+| Collection | Images | On disk | Missing | Truncated |
+|---|---:|---:|---:|---:|
+| HAM10000 | 11,720 / 11,720 | 323 MB | 0 | 0 |
+| PAD-UFES-20 | 2,298 / 2,298 | 238 MB | 0 | 0 |
+
+## The manifest's size field does not describe the file served
+
+ISIC's manifest reports `files.full.size` as a value **exactly 3,209 bytes smaller** than
+the object S3 actually returns — the same constant offset for every image in both
+collections, confirmed against the server's own `Content-Length`.
+
+The downloads are correct; the metadata is what disagrees. But the first version of the
+downloader used that field to decide whether a file was already present, which meant the
+comparison never matched: a restart would have re-fetched all 14,018 images, and a
+truncated file would have passed as valid.
+
+Completeness is therefore checked by JPEG structure — start-of-image `FFD8` at the front,
+end-of-image `FFD9` at the back — which is what actually distinguishes a whole file from a
+half-written one. A freshly downloaded file is checked before it is moved into place, so a
+failed request can never leave a partial image behind under a real filename.
+
+`backend/tests/test_download.py` pins this: whole JPEG accepted; truncated, empty,
+non-JPEG and missing files all rejected.

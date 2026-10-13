@@ -58,8 +58,29 @@ def fetch_manifest(collection_id, ctx):
     return records
 
 
+def looks_complete(path):
+    """Is this a whole JPEG already on disk?
+
+    We cannot use the manifest's `size` field: ISIC reports a figure that is a
+    constant 3,209 bytes smaller than the object S3 actually serves, so a size
+    comparison never matches and every file would be re-fetched on a restart.
+    Checking the JPEG start- and end-of-image markers instead catches the thing
+    that actually matters -- a truncated download -- and costs two seeks.
+    """
+    try:
+        if path.stat().st_size < 4:
+            return False
+        with path.open("rb") as fh:
+            if fh.read(2) != b"\xff\xd8":  # SOI
+                return False
+            fh.seek(-2, 2)
+            return fh.read(2) == b"\xff\xd9"  # EOI
+    except OSError:
+        return False
+
+
 def download_one(url, dest, expected_size, ctx, retries=3):
-    if dest.exists() and expected_size and dest.stat().st_size == expected_size:
+    if dest.exists() and looks_complete(dest):
         return "skipped"
     for attempt in range(retries):
         try:
@@ -67,6 +88,9 @@ def download_one(url, dest, expected_size, ctx, retries=3):
                 data = resp.read()
             tmp = dest.with_suffix(dest.suffix + ".part")
             tmp.write_bytes(data)
+            if not looks_complete(tmp):
+                tmp.unlink(missing_ok=True)
+                raise OSError("truncated or non-JPEG response")
             tmp.replace(dest)
             return "downloaded"
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
