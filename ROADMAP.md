@@ -1,39 +1,42 @@
 # Roadmap
 
-Eight phases, each planned in detail when we reach it rather than guessed at now.
+Full reasoning in [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md). This is the checklist.
 
-## 1 · Dataset
-- [ ] Acquire HAM10000 (~2.9 GB) — Harvard Dataverse `doi:10.7910/DVN/DBW86T`
-- [ ] Stratified train/val/test split, fixed seed, committed split manifest
-- [ ] `docs/DATASET_CARD.md` — class distribution, provenance, and the skin-tone skew
+## 1 · Data
+- [ ] HAM10000 (~2.9 GB) — Harvard Dataverse `doi:10.7910/DVN/DBW86T`
+- [ ] PAD-UFES-20 (smartphone images) — ISIC collection 406
+- [ ] Stratified splits, fixed seed, committed manifest
+- [ ] `docs/DATASET_CARD.md` — imbalance, domain split, skin-tone skew
 
 ## 2 · Baseline
-- [ ] One lightweight model trained properly
-- [ ] Balanced class weights **and** a two-stage fine-tune (freeze → unfreeze at low LR)
-- [ ] Class-wise metrics from the first run, not just accuracy
+- [ ] One lightweight model, two-stage fine-tune (freeze → unfreeze at low LR)
+- [ ] Balanced class weights
+- [ ] Class-wise metrics from run one
 
-## 3 · Architecture comparison
-- [ ] Accuracy × model size × inference latency across candidate architectures
-- [ ] Generated into `results/benchmark.json` as the single source of truth
-- [ ] Integrity check: reported accuracy must equal weighted-average recall
+## 3 · The deployment gap  ← the centrepiece
+- [ ] Evaluate HAM10000-trained model on PAD-UFES-20 cold. Record the drop.
+- [ ] Phone-capture augmentation (blur, white balance, angle, JPEG compression)
+- [ ] Small in-domain fine-tune; report before/after
 
-## 4 · Grad-CAM
-- [ ] Heatmap from last conv layer activations and class gradients
-- [ ] Sanity test: heatmap changes when the target class is forced to change
-- [ ] Overlay rendering
+## 4 · Knowing when to stop
+- [ ] Temperature scaling + reliability diagram
+- [ ] Abstention threshold chosen against a target melanoma recall
+- [ ] Input-quality gate (blur / not-skin detection)
 
-## 5 · Care guidance
-- [ ] Condition knowledge base, reviewed against the safety rules in the README
-- [ ] Ideally sanity-checked by the project guide or a clinician
+## 5 · Explainability, measured
+- [ ] Grad-CAM
+- [ ] Energy-in-mask and IoU vs ISIC lesion masks
+- [ ] Sanity test: heatmap changes when target class changes
 
 ## 6 · Backend
-- [ ] FastAPI: `/predict`, `/explain`, `/metrics`
-- [ ] Confidence threshold below which the API declines to give a label
+- [ ] FastAPI: `/predict`, `/explain`, `/metrics`, `/health`
+- [ ] Dockerfile, pytest on the inference path, GitHub Actions CI
 
 ## 7 · Frontend
-- [ ] Promote the mockup's screens onto real endpoints
+- [ ] Promote mockup screens onto real endpoints
+- [ ] Abstention becomes real behaviour, not a demo checkbox
 
-## 8 · Evaluation and paper
-- [ ] Rewrite the IEEE paper against measured results
-- [ ] Rebuild the results tables from `results/benchmark.json`
-- [ ] Limitations section: class imbalance, dataset skin-tone skew, minority-class performance
+## 8 · Ship and write up
+- [ ] Deploy to Hugging Face Spaces (free CPU)
+- [ ] Model card, dataset card, README with real numbers
+- [ ] Report written against measured results
