@@ -1,0 +1,48 @@
+{
+  "collection": "PAD-UFES-20 (ISIC collection 406)",
+  "license": "CC-BY",
+  "image_type": "clinical: close-up (smartphone)",
+  "n_images": 2298,
+  "n_patients": 1373,
+  "n_lesions": 1891,
+  "diagnosis_counts": {
+    "Basal cell carcinoma": 845,
+    "Solar or actinic keratosis": 730,
+    "Nevus": 244,
+    "Seborrheic keratosis": 235,
+    "Squamous cell carcinoma, NOS": 192,
+    "Melanoma, NOS": 52
+  },
+  "malignancy_counts": {
+    "Benign": 479,
+    "Indeterminate": 730,
+    "Malignant": 1089
+  },
+  "fitzpatrick_counts": {
+    "I": 153,
+    "II": 876,
+    "III": 392,
+    "IV": 62,
+    "V": 10,
+    "VI": 1,
+    "unrecorded": 804
+  },
+  "field_coverage": {
+    "anatom_site_1": 2298,
+    "diagnosis_1": 2298,
+    "diagnosis_2": 2298,
+    "diagnosis_3": 2298,
+    "diagnosis_confirm_type": 2298,
+    "age_approx": 2298,
+    "lesion_id": 2298,
+    "patient_id": 2298,
+    "anatom_site_2": 2106,
+    "fitzpatrick_skin_type": 1494,
+    "sex": 1494,
+    "clin_size_long_diam_mm": 1490,
+    "anatom_site_3": 1158,
+    "anatom_site_4": 181,
+    "anatom_site_special": 165,
+    "anatom_site_5": 23
+  }
+}
