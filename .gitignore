@@ -1,0 +1,15 @@
+# Dataset — never committed (~2.9 GB)
+data/images/
+data/split/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+dist/
+
+.DS_Store
