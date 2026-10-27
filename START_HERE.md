@@ -90,6 +90,12 @@ not committed (too large), so **start it fresh**:
     --epochs-head 3 --epochs-full 15 --run-name ham_baseline_effb0
 ```
 
+Or, to run it overnight on a laptop without the machine sleeping through it:
+
+```bash
+./train_overnight.sh
+```
+
 Stop any time with Ctrl-C; resume with the same command plus `--resume`. Expect
 val macro F1 around 0.62-0.70.
 
