@@ -3,6 +3,10 @@
 Explainable AI for dermatological screening. Final-year project, MLR Institute of
 Technology.
 
+> **New here, or picking this up on another machine? Read [START_HERE.md](START_HERE.md),
+> then run `./setup.sh`.** It installs everything, downloads both datasets, builds the
+> splits and runs the tests in one command.
+
 MEdAI classifies a dermatoscopic image into one of the seven HAM10000 lesion categories,
 explains the prediction with a Grad-CAM heatmap, and turns the result into practical
 care guidance.

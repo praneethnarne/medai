@@ -1,5 +1,18 @@
-# Pinned loosely for now; locked once training starts.
+# Core
+numpy>=1.26
+pillow>=10.0
 requests>=2.32
 certifi>=2024.2
-pytest>=8.0
 scikit-learn>=1.5
+
+# Deep learning.
+# pip's default wheels are correct for every platform we target:
+#   Linux / Windows with an NVIDIA card -> CUDA build (uses the GPU)
+#   macOS Apple Silicon                 -> MPS build (uses the GPU)
+#   anything else                       -> CPU build (works, slowly)
+# train.py picks the device at runtime, so nothing here needs changing.
+torch>=2.2
+torchvision>=0.17
+
+# Testing
+pytest>=8.0
