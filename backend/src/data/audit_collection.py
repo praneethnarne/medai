@@ -15,11 +15,20 @@ import pathlib
 import statistics
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from data import labels  # noqa: E402
+
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 
 
 def audit(records):
     dx = collections.Counter()
+    # Counts in the project's own label space, so downstream documents never
+    # have to re-derive the mapping from raw diagnosis strings. HAM10000's
+    # vascular records carry a null diagnosis_3, which a naive string-keyed
+    # count silently drops.
+    lesion_types = collections.Counter()
+    triage = collections.Counter()
     malignancy = collections.Counter()
     fitz = collections.Counter()
     field_coverage = collections.Counter()
@@ -32,6 +41,8 @@ def audit(records):
         c = r["metadata"]["clinical"]
         a = r["metadata"].get("acquisition", {})
         dx[c.get("diagnosis_3") or c.get("diagnosis_2") or c.get("diagnosis_1")] += 1
+        lesion_types[labels.lesion_type_of(r)] += 1
+        triage[labels.triage_of(r)] += 1
         malignancy[c.get("diagnosis_1")] += 1
         fitz[c.get("fitzpatrick_skin_type") or "unrecorded"] += 1
         licences[r.get("copyright_license")] += 1
@@ -58,6 +69,8 @@ def audit(records):
         "licenses": dict(licences),
         "image_types": dict(image_types),
         "diagnosis_counts": dict(dx.most_common()),
+        "lesion_type_counts": {t: lesion_types.get(t, 0) for t in labels.LESION_TYPES},
+        "triage_counts": {t: triage.get(t, 0) for t in labels.TRIAGE},
         "malignancy_counts": dict(malignancy),
         "fitzpatrick_counts": dict(sorted(fitz.items(), key=lambda kv: str(kv[0]))),
         "field_coverage": dict(field_coverage.most_common()),

@@ -17,6 +17,21 @@
     "Squamous cell carcinoma, NOS": 192,
     "Melanoma, NOS": 52
   },
+  "lesion_type_counts": {
+    "nevus": 244,
+    "benign_keratosis": 235,
+    "actinic_keratosis": 730,
+    "basal_cell_carcinoma": 845,
+    "squamous_cell_carcinoma": 192,
+    "melanoma": 52,
+    "vascular": 0,
+    "dermatofibroma": 0
+  },
+  "triage_counts": {
+    "benign": 479,
+    "indeterminate": 730,
+    "malignant": 1089
+  },
   "malignancy_counts": {
     "Benign": 479,
     "Indeterminate": 730,

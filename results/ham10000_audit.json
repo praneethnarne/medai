@@ -20,6 +20,21 @@
     "Dermatofibroma": 160,
     "Solar or actinic keratosis": 149
   },
+  "lesion_type_counts": {
+    "nevus": 7737,
+    "benign_keratosis": 1338,
+    "actinic_keratosis": 149,
+    "basal_cell_carcinoma": 622,
+    "squamous_cell_carcinoma": 229,
+    "melanoma": 1305,
+    "vascular": 180,
+    "dermatofibroma": 160
+  },
+  "triage_counts": {
+    "benign": 9415,
+    "indeterminate": 149,
+    "malignant": 2156
+  },
   "malignancy_counts": {
     "Benign": 9415,
     "Malignant": 2156,
