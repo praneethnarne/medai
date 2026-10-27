@@ -1,0 +1,105 @@
+# Dataset card
+
+Two collections, two different jobs. Every figure here is generated from
+`results/*_audit.json` and `results/*_split_summary.json` by the scripts in
+`backend/src/data/`; none is typed by hand.
+
+## Why two datasets
+
+MEdAI is meant for people photographing a mole with a phone. HAM10000 is entirely
+dermatoscopic -- taken through a magnifier pressed against the skin under controlled
+light -- so a model measured only on it is being judged in a setting its users will never
+be in. PAD-UFES-20 is smartphone photography, which is the deployment domain.
+
+HAM10000 is too useful to discard and PAD-UFES-20 is too small to train on alone, so
+HAM10000 is the pretraining corpus and PAD-UFES-20 is where the headline numbers are
+measured.
+
+## At a glance
+
+| | HAM10000 | PAD-UFES-20 |
+|---|---|---|
+| Role | pretraining corpus | **primary domain** |
+| Image type | dermatoscopic | smartphone (clinical close-up) |
+| Images | 11,720 | 2,298 |
+| Lesions | 8,838 | 1,891 |
+| Patients | not recorded | 1,373 |
+| Finest split unit | lesion | patient |
+| Licence | CC-BY-NC | CC-BY |
+| Size on disk | 286 MB | 230 MB |
+| Source | ISIC collection 212 | ISIC collection 406 |
+
+## Labels
+
+Both are served by ISIC under one normalised taxonomy, so no hand-written class
+mapping is needed. `diagnosis_1` gives triage, `diagnosis_2` gives lesion type.
+`diagnosis_3` is deliberately unused -- it is where the two datasets word the same
+thing differently.
+
+| Lesion type | HAM10000 | PAD-UFES-20 | Triage level |
+|---|---:|---:|---|
+| Mole (nevus) | 7,737 | 244 | benign |
+| Benign keratosis | 1,338 | 235 | benign |
+| Actinic keratosis | 149 | 730 | indeterminate |
+| Basal cell carcinoma | 622 | 845 | malignant |
+| Squamous cell carcinoma | 229 | 192 | malignant |
+| Melanoma | 1,305 | 52 | malignant |
+| Vascular lesion | 0 | 0 _(HAM only)_ | benign |
+| Dermatofibroma | 160 | 0 _(HAM only)_ | benign |
+
+### Triage distribution
+
+| | benign | indeterminate | malignant |
+|---|---:|---:|---:|
+| HAM10000 | 9,415 | 149 | 2,156 |
+| PAD-UFES-20 | 479 | 730 | 1,089 |
+
+**The priors are inverted.** HAM10000 is 80% benign; PAD-UFES-20 is 47% malignant,
+because it comes from a screening programme where people presented with something that
+worried them. So cross-domain degradation will have two causes -- images that look
+different, and base rates that differ -- and they have to be separated before the
+headline number means anything.
+
+## Splits
+
+
+**HAM10000** — split at lesion level, seed 42
+
+| Split | Images | Share | Lesions |
+|---|---:|---:|---:|
+| train | 8,401 | 71.7% | 6,313 |
+| val | 1,663 | 14.2% | 1,262 |
+| test | 1,656 | 14.1% | 1,263 |
+
+**PAD-UFES-20** — split at patient level, seed 42
+
+| Split | Images | Share | Patients |
+|---|---:|---:|---:|
+| train | 1,657 | 72.1% | 979 |
+| val | 308 | 13.4% | 195 |
+| test | 333 | 14.5% | 199 |
+
+Split at the finest unit each dataset supports, so two photographs of one lesion cannot
+land on opposite sides. HAM10000 records no patient id, so lesion level is the best
+available there -- two lesions from the same patient may still be separated, and that is
+a known, documented limitation rather than an oversight.
+
+## Known limitations
+
+**Melanoma is nearly absent from the primary domain.** PAD-UFES-20 holds 52 melanoma
+images; four of them are in the test split. A per-class recall on four examples swings 25
+points when one image changes, so it cannot carry a conclusion. This is why triage is the
+primary task, and why melanoma recall is only ever reported with a confidence interval
+and its support count.
+
+**Skin tone is barely represented.** Fitzpatrick type is recorded for 1,494 PAD-UFES-20
+images, but types V and VI total eleven. Comparisons across I-III versus IV+ are possible;
+claims about dark skin are not, and will not be made. HAM10000 records no skin tone at all.
+
+**HAM10000 is not the canonical 10,015 images.** ISIC's collection contains 11,720 --
+the original release plus the ISIC 2018 validation and test sets, labelled afterwards.
+Our HAM10000 numbers are therefore **not comparable to published HAM10000 results**.
+
+**Licensing.** HAM10000 is CC-BY-NC. Since it is the pretraining corpus, every model here
+inherits the non-commercial restriction.
+

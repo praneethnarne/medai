@@ -62,3 +62,21 @@ def test_unknown_label_is_fatal():
 def test_every_lesion_type_has_a_display_name():
     for lesion_type in labels.LESION_TYPES:
         assert labels.DISPLAY_NAMES[lesion_type]
+
+
+@pytest.mark.parametrize("name", DATASETS)
+def test_collapsing_lesion_type_reproduces_the_recorded_triage(name):
+    """TRIAGE_OF_TYPE must agree with the archive on every single record.
+
+    The cross-domain experiment collapses an eight-class lesion-type prediction
+    into a triage decision. If that mapping disagreed with the data even once,
+    the headline number would be measuring our bookkeeping rather than the
+    model.
+    """
+    for record in load(name):
+        assert labels.triage_of_type(labels.lesion_type_of(record)) == labels.triage_of(record)
+
+
+def test_every_lesion_type_has_a_triage_level():
+    assert set(labels.TRIAGE_OF_TYPE) == set(labels.LESION_TYPES)
+    assert set(labels.TRIAGE_OF_TYPE.values()) <= set(labels.TRIAGE)

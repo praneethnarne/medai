@@ -95,3 +95,28 @@ def is_shared_type(record: dict) -> bool:
     learned during pretraining but never evaluated in the phone-photo domain.
     """
     return lesion_type_of(record) in SHARED_TYPES
+
+
+# --- Collapsing lesion type to triage ---------------------------------------
+# Each lesion type sits at exactly one triage level, verified against every
+# record in both collections (see tests). This is what lets a model trained on
+# HAM10000's eight lesion types produce triage predictions on PAD-UFES-20,
+# whose label set is different -- the cross-domain experiment depends on it.
+
+TRIAGE_OF_TYPE = {
+    "nevus": "benign",
+    "benign_keratosis": "benign",
+    "dermatofibroma": "benign",
+    "vascular": "benign",
+    "actinic_keratosis": "indeterminate",
+    "basal_cell_carcinoma": "malignant",
+    "squamous_cell_carcinoma": "malignant",
+    "melanoma": "malignant",
+}
+
+
+def triage_of_type(lesion_type: str) -> str:
+    try:
+        return TRIAGE_OF_TYPE[lesion_type]
+    except KeyError:
+        raise UnknownLabel(f"no triage level for lesion type {lesion_type!r}") from None

@@ -1,0 +1,52 @@
+{
+  "collection": "ham10000",
+  "target": "lesion_type",
+  "arch": "efficientnet_b0",
+  "epochs_head": 3,
+  "epochs_full": 15,
+  "batch_size": 32,
+  "lr_head": 0.001,
+  "lr_full": 0.0001,
+  "weight_decay": 0.0001,
+  "weighting": "balanced",
+  "label_smoothing": 0.05,
+  "workers": 6,
+  "patience": 5,
+  "seed": 42,
+  "run_name": "ham_baseline_effb0",
+  "init_from": null,
+  "run_id": "ham_baseline_effb0",
+  "device": "mps",
+  "class_names": [
+    "nevus",
+    "benign_keratosis",
+    "actinic_keratosis",
+    "basal_cell_carcinoma",
+    "squamous_cell_carcinoma",
+    "melanoma",
+    "vascular",
+    "dermatofibroma"
+  ],
+  "n_train": 8401,
+  "n_val": 1663,
+  "class_counts": {
+    "nevus": 5578,
+    "benign_keratosis": 987,
+    "actinic_keratosis": 109,
+    "basal_cell_carcinoma": 437,
+    "squamous_cell_carcinoma": 156,
+    "melanoma": 897,
+    "vascular": 122,
+    "dermatofibroma": 115
+  },
+  "class_weights": [
+    0.1883,
+    1.064,
+    9.6342,
+    2.403,
+    6.7316,
+    1.1707,
+    8.6076,
+    9.1315
+  ]
+}
