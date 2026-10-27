@@ -19,3 +19,4 @@ data/*/images/
 
 # Training checkpoints (configs, history and reports are committed)
 results/runs/*/best.pt
+results/runs/*/last.pt

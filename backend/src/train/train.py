@@ -95,15 +95,45 @@ def evaluate(model, loader, device, class_names):
     return metrics.report(y_true, y_pred, class_names)
 
 
+def save_checkpoint(path, *, model, opt, sched, stage, epoch, history, best):
+    """Everything needed to continue exactly where we stopped.
+
+    Written after every epoch, not just at the end, because this trains on a
+    laptop that is also used for other work. Without optimizer and scheduler
+    state a resume silently restarts the learning-rate schedule, which is a
+    different run wearing the same name.
+    """
+    torch.save({
+        "model": model.state_dict(),
+        "optimizer": opt.state_dict(),
+        "scheduler": sched.state_dict(),
+        "stage": stage,
+        "epoch": epoch,
+        "history": history,
+        "best": best,
+    }, path)
+
+
 def run_epochs(model, head, loaders, device, class_names, *, epochs, lr,
-               weight_decay, loss_fn, stage, history, best, run_dir, patience):
+               weight_decay, loss_fn, stage, history, best, run_dir, patience,
+               resume_state=None):
     params = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(epochs, 1))
     train_loader, val_loader = loaders
     since_improved = 0
+    start_epoch = 1
 
-    for epoch in range(1, epochs + 1):
+    if resume_state and resume_state["stage"] == stage:
+        opt.load_state_dict(resume_state["optimizer"])
+        sched.load_state_dict(resume_state["scheduler"])
+        start_epoch = resume_state["epoch"] + 1
+        if start_epoch > epochs:
+            print(f"  [{stage}] already complete, skipping")
+            return
+        print(f"  [{stage}] resuming at epoch {start_epoch}")
+
+    for epoch in range(start_epoch, epochs + 1):
         model.train()
         started = time.time()
         total_loss, seen = 0.0, 0
@@ -145,9 +175,14 @@ def run_epochs(model, head, loaders, device, class_names, *, epochs, lr,
             since_improved = 0
         else:
             since_improved += 1
-            if patience and since_improved >= patience:
-                print(f"  [{stage}] no improvement for {patience} epochs, stopping")
-                break
+
+        save_checkpoint(run_dir / "last.pt", model=model, opt=opt, sched=sched,
+                        stage=stage, epoch=epoch, history=history, best=best)
+        (run_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n")
+
+        if patience and since_improved >= patience:
+            print(f"  [{stage}] no improvement for {patience} epochs, stopping")
+            break
 
 
 def main():
@@ -170,6 +205,9 @@ def main():
     ap.add_argument("--run-name", default=None)
     ap.add_argument("--init-from", default=None,
                     help="checkpoint to start from, for the fine-tune phase")
+    ap.add_argument("--resume", action="store_true",
+                    help="continue an interrupted run from its last.pt, restoring "
+                         "optimizer and scheduler state so the schedule is unbroken")
     args = ap.parse_args()
 
     set_seed(args.seed)
@@ -223,20 +261,38 @@ def main():
 
     history: list[dict] = []
     best = {"macro_f1": -1.0}
+    resume_state = None
 
-    print("stage 1: frozen backbone, head only")
-    set_backbone_trainable(model, head, False)
-    run_epochs(model, head, loaders, device, class_names, epochs=args.epochs_head,
-               lr=args.lr_head, weight_decay=args.weight_decay, loss_fn=loss_fn,
-               stage="head", history=history, best=best, run_dir=run_dir,
-               patience=0)
+    last_path = run_dir / "last.pt"
+    if args.resume and last_path.exists():
+        resume_state = torch.load(last_path, map_location=device, weights_only=False)
+        model.load_state_dict(resume_state["model"])
+        history = resume_state["history"]
+        best = resume_state["best"]
+        print(f"resuming from {last_path.name}: stage={resume_state['stage']} "
+              f"epoch={resume_state['epoch']} best_macro_f1={best['macro_f1']:.4f}")
+    elif args.resume:
+        print("--resume given but no last.pt found; starting fresh")
+
+    head_done = resume_state is not None and resume_state["stage"] == "full"
+
+    if not head_done:
+        print("stage 1: frozen backbone, head only")
+        set_backbone_trainable(model, head, False)
+        run_epochs(model, head, loaders, device, class_names, epochs=args.epochs_head,
+                   lr=args.lr_head, weight_decay=args.weight_decay, loss_fn=loss_fn,
+                   stage="head", history=history, best=best, run_dir=run_dir,
+                   patience=0, resume_state=resume_state)
+    else:
+        print("stage 1 already complete")
 
     print("stage 2: full fine-tune")
     set_backbone_trainable(model, head, True)
     run_epochs(model, head, loaders, device, class_names, epochs=args.epochs_full,
                lr=args.lr_full, weight_decay=args.weight_decay, loss_fn=loss_fn,
                stage="full", history=history, best=best, run_dir=run_dir,
-               patience=args.patience)
+               patience=args.patience,
+               resume_state=resume_state if head_done else None)
 
     (run_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n")
     (run_dir / "best_val_report.json").write_text(json.dumps(best, indent=2) + "\n")
