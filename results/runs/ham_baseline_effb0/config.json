@@ -10,11 +10,12 @@
   "weight_decay": 0.0001,
   "weighting": "balanced",
   "label_smoothing": 0.05,
-  "workers": 6,
+  "workers": 4,
   "patience": 5,
   "seed": 42,
   "run_name": "ham_baseline_effb0",
   "init_from": null,
+  "resume": false,
   "run_id": "ham_baseline_effb0",
   "device": "mps",
   "class_names": [
