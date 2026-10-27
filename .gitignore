@@ -16,3 +16,6 @@ dist/
 
 # Downloaded datasets (manifests are committed, images are not)
 data/*/images/
+
+# Training checkpoints (configs, history and reports are committed)
+results/runs/*/best.pt
