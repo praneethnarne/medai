@@ -1,0 +1,95 @@
+{
+  "accuracy": 0.8719806763285024,
+  "macro_precision": 0.5928497942386831,
+  "macro_recall": 0.7048439347295447,
+  "macro_f1": 0.6208536658650785,
+  "weighted_recall": 0.8719806763285024,
+  "weighted_f1": 0.8788464609825519,
+  "n": 1656,
+  "per_class": {
+    "benign": {
+      "precision": 0.9452160493827161,
+      "recall": 0.9148618371919343,
+      "f1": 0.9297912713472486,
+      "support": 1339
+    },
+    "indeterminate": {
+      "precision": 0.16666666666666666,
+      "recall": 0.5,
+      "f1": 0.25,
+      "support": 14
+    },
+    "malignant": {
+      "precision": 0.6666666666666666,
+      "recall": 0.6996699669966997,
+      "f1": 0.6827697262479872,
+      "support": 303
+    }
+  },
+  "confusion_matrix": [
+    [
+      1225,
+      13,
+      101
+    ],
+    [
+      2,
+      7,
+      5
+    ],
+    [
+      69,
+      22,
+      212
+    ]
+  ],
+  "class_names": [
+    "benign",
+    "indeterminate",
+    "malignant"
+  ],
+  "bootstrap_95ci": {
+    "n_resamples": 1000,
+    "overall": {
+      "accuracy": [
+        0.8545,
+        0.8865
+      ],
+      "macro_f1": [
+        0.5623,
+        0.6732
+      ],
+      "macro_recall": [
+        0.609,
+        0.7988
+      ]
+    },
+    "per_class_recall": {
+      "benign": [
+        0.9001,
+        0.93
+      ],
+      "indeterminate": [
+        0.2,
+        0.7694
+      ],
+      "malignant": [
+        0.6495,
+        0.7509
+      ]
+    }
+  },
+  "low_support_classes": [
+    "indeterminate"
+  ],
+  "meta": {
+    "run": "ham_effb0_colab",
+    "trained_on": "ham10000",
+    "trained_target": "lesion_type",
+    "evaluated_on": "ham10000",
+    "split": "test",
+    "collapsed_to_triage": true,
+    "cross_domain": false,
+    "arch": "efficientnet_b0"
+  }
+}
