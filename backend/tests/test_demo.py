@@ -137,4 +137,4 @@ def test_every_group_except_spots_has_guidance():
 
     assert set(care.GROUP_GUIDANCE) == set(GROUPS) - {"spot_growth"}
     for g in care.GROUP_GUIDANCE.values():
-        assert g["urgency"] in care.URGENCY
+        assert g["urgency"] in care.URGENCY and g["headline"]

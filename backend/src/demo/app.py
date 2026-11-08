@@ -130,11 +130,9 @@ def _guidance_md(pred, threshold: float) -> str:
 
 def _group_md(gp) -> str:
     g = care.GROUP_GUIDANCE[gp.top_group]
-    u = care.URGENCY[g["urgency"]]
     e = care.EMERGENCY
     parts = [
-        f"## {u['label']}",
-        u["note"],
+        f"## {g['headline']}",
         f"**{e['label']}:**\n" + "\n".join(f"- {x}" for x in e["signs"]),
         f"### It looks most like: {GROUP_DISPLAY[gp.top_group]} ({gp.top_prob:.0%})",
         f"_{g['plain']}_",

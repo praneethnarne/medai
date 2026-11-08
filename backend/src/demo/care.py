@@ -263,6 +263,7 @@ EMERGENCY = {
 
 GROUP_GUIDANCE = {
     "rash": {
+        "headline": "Usually not urgent -- keep an eye on it",
         "urgency": "routine",
         "plain": "A rash or patch of inflamed skin. Most are harmless and settle, but some need a doctor.",
         "what_it_is": (
@@ -287,6 +288,7 @@ GROUP_GUIDANCE = {
         ],
     },
     "infection": {
+        "headline": "See a doctor or pharmacist in the next few days",
         "urgency": "prompt",
         "plain": "It may be a skin infection (fungal, bacterial or viral). These usually need treatment.",
         "what_it_is": (
@@ -312,6 +314,7 @@ GROUP_GUIDANCE = {
         ],
     },
     "bite_sting": {
+        "headline": "Usually settles on its own -- watch for the warning signs",
         "urgency": "routine",
         "plain": "It looks like an insect bite or sting. Most settle on their own within days.",
         "what_it_is": (
@@ -337,6 +340,7 @@ GROUP_GUIDANCE = {
         ],
     },
     "wound_scar": {
+        "headline": "Usually heals on its own -- keep it clean and watch it",
         "urgency": "routine",
         "plain": "It looks like a wound, burn, bruise or scar -- an injury or what it left behind.",
         "what_it_is": (

@@ -144,7 +144,7 @@ def main() -> int:
     (eval_dir / f"{args.run}__ood.json").write_text(text)
 
     print(f"fitted on training images of: {', '.join(args.fit)}")
-    print(f"threshold set so {args.keep:.0%} of validation lesions pass "
+    print(f"threshold set so {args.keep:.0%} of validation images pass "
           f"(actual: {1 - report['val_rejected']:.1%})")
     for c, r in report["test_rejected"].items():
         print(f"  {c:14s} test images flagged as unfamiliar: {r:.1%}")
