@@ -1,0 +1,217 @@
+{
+  "accuracy": 0.7723429951690821,
+  "macro_precision": 0.5272509377259518,
+  "macro_recall": 0.6964021511984586,
+  "macro_f1": 0.5815025067451659,
+  "weighted_recall": 0.7723429951690821,
+  "weighted_f1": 0.7915538863973247,
+  "n": 1656,
+  "per_class": {
+    "nevus": {
+      "precision": 0.9699248120300752,
+      "recall": 0.8186763372620127,
+      "f1": 0.8879056047197641,
+      "support": 1103
+    },
+    "benign_keratosis": {
+      "precision": 0.628140703517588,
+      "recall": 0.6720430107526881,
+      "f1": 0.6493506493506493,
+      "support": 186
+    },
+    "actinic_keratosis": {
+      "precision": 0.12727272727272726,
+      "recall": 0.5,
+      "f1": 0.2028985507246377,
+      "support": 14
+    },
+    "basal_cell_carcinoma": {
+      "precision": 0.6886792452830188,
+      "recall": 0.8795180722891566,
+      "f1": 0.7724867724867726,
+      "support": 83
+    },
+    "squamous_cell_carcinoma": {
+      "precision": 0.3877551020408163,
+      "recall": 0.40425531914893614,
+      "f1": 0.39583333333333326,
+      "support": 47
+    },
+    "melanoma": {
+      "precision": 0.4801762114537445,
+      "recall": 0.630057803468208,
+      "f1": 0.545,
+      "support": 173
+    },
+    "vascular": {
+      "precision": 0.5471698113207547,
+      "recall": 1.0,
+      "f1": 0.7073170731707317,
+      "support": 29
+    },
+    "dermatofibroma": {
+      "precision": 0.3888888888888889,
+      "recall": 0.6666666666666666,
+      "f1": 0.49122807017543857,
+      "support": 21
+    }
+  },
+  "confusion_matrix": [
+    [
+      903,
+      50,
+      9,
+      10,
+      11,
+      93,
+      14,
+      13
+    ],
+    [
+      6,
+      125,
+      13,
+      6,
+      5,
+      20,
+      5,
+      6
+    ],
+    [
+      0,
+      2,
+      7,
+      1,
+      3,
+      1,
+      0,
+      0
+    ],
+    [
+      1,
+      2,
+      1,
+      73,
+      4,
+      2,
+      0,
+      0
+    ],
+    [
+      0,
+      3,
+      13,
+      9,
+      19,
+      1,
+      0,
+      2
+    ],
+    [
+      21,
+      15,
+      11,
+      6,
+      6,
+      109,
+      4,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      29,
+      0
+    ],
+    [
+      0,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1,
+      14
+    ]
+  ],
+  "class_names": [
+    "nevus",
+    "benign_keratosis",
+    "actinic_keratosis",
+    "basal_cell_carcinoma",
+    "squamous_cell_carcinoma",
+    "melanoma",
+    "vascular",
+    "dermatofibroma"
+  ],
+  "bootstrap_95ci": {
+    "n_resamples": 1000,
+    "overall": {
+      "accuracy": [
+        0.7518,
+        0.7911
+      ],
+      "macro_f1": [
+        0.541,
+        0.6183
+      ],
+      "macro_recall": [
+        0.6444,
+        0.7498
+      ]
+    },
+    "per_class_recall": {
+      "nevus": [
+        0.7954,
+        0.8393
+      ],
+      "benign_keratosis": [
+        0.6034,
+        0.7356
+      ],
+      "actinic_keratosis": [
+        0.2,
+        0.7694
+      ],
+      "basal_cell_carcinoma": [
+        0.8026,
+        0.9398
+      ],
+      "squamous_cell_carcinoma": [
+        0.2641,
+        0.5556
+      ],
+      "melanoma": [
+        0.5549,
+        0.7025
+      ],
+      "vascular": [
+        1.0,
+        1.0
+      ],
+      "dermatofibroma": [
+        0.4443,
+        0.8571
+      ]
+    }
+  },
+  "low_support_classes": [
+    "actinic_keratosis",
+    "vascular",
+    "dermatofibroma"
+  ],
+  "meta": {
+    "run": "ham_effb0_colab",
+    "trained_on": "ham10000",
+    "trained_target": "lesion_type",
+    "evaluated_on": "ham10000",
+    "split": "test",
+    "collapsed_to_triage": false,
+    "cross_domain": false,
+    "arch": "efficientnet_b0"
+  }
+}
