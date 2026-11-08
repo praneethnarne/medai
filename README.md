@@ -7,24 +7,66 @@ Technology.
 > then run `./setup.sh`.** It installs everything, downloads both datasets, builds the
 > splits and runs the tests in one command.
 
-MEdAI classifies a dermatoscopic image into one of the seven HAM10000 lesion categories,
-explains the prediction with a Grad-CAM heatmap, and turns the result into practical
-care guidance.
+MEdAI classifies a photo of a skin lesion into a triage level and one of eight lesion
+types, explains the prediction with a Grad-CAM heatmap, declines to answer when it is not
+confident, and turns the result into practical care guidance. It is built for phone
+photos, not only dermatoscope images.
 
 ## Status
 
-Built from scratch over roughly two months. Nothing here is claimed until it is measured
-— see `ROADMAP.md` for what is done and what is not.
-
 | Component | Status |
 |---|---|
-| Dataset pipeline | not started |
-| Baseline model | not started |
+| Dataset pipeline | done — HAM10000 + PAD-UFES-20 from ISIC, verified, lesion/patient-level splits |
+| Baseline model | done — EfficientNet-B0 on HAM10000 (`results/runs/ham_effb0_colab`) |
+| Phone-photo fine-tune | done — PAD-UFES-20, with and without phone-capture augmentation |
+| Calibration + abstention | done — temperature scaling, threshold chosen on validation |
+| Grad-CAM | done in the demo; not yet measured against lesion masks |
+| Care guidance | done — `backend/src/demo/care.py`, no drug names |
+| Web demo | done — Gradio (`backend/src/demo/app.py`), launched from the Colab notebook |
 | Architecture comparison | not started |
-| Grad-CAM | not started |
-| Care guidance | drafted in the mockup |
+| Segmentation head | not started |
 | Backend API | not started |
-| Frontend | mockup only — [praneethnarne/medai-mockup](https://github.com/praneethnarne/medai-mockup) |
+
+Training runs on a free Colab GPU: open `notebooks/train_on_colab.ipynb`.
+
+## Results
+
+All numbers are on held-out **test** sets, at the triage level (benign / indeterminate /
+malignant), with 95% bootstrap confidence intervals. Each is read from the file named
+beside it under `results/eval/`.
+
+**Phone photos (PAD-UFES-20 test, 333 images)**
+
+| Model | Accuracy | Macro F1 | Malignant recall | Source |
+|---|---|---|---|---|
+| Trained on dermatoscope images only | 0.450 [0.396, 0.505] | 0.380 [0.333, 0.426] | 0.509 | `ham_effb0_colab__pad_ufes_20_test__triage.json` |
+| + fine-tuned on phone photos | 0.793 [0.748, 0.838] | 0.776 [0.725, 0.823] | 0.877 | `pad_ft_effb0__pad_ufes_20_test__triage.json` |
+| + phone-capture augmentation (deployed) | **0.811** [0.769, 0.850] | **0.801** [0.755, 0.844] | **0.908** | `pad_ft_effb0_phoneaug__pad_ufes_20_test__triage.json` |
+
+The augmented run was chosen on validation macro F1 (0.676 vs 0.614). On test its lead is
+inside the confidence intervals, so the claim is "did not hurt", not "proven better".
+
+**Dermatoscope images (HAM10000 test, 1,656 images)**
+
+| Model | Accuracy | Macro F1 | Malignant recall | Malignant precision |
+|---|---|---|---|---|
+| Trained on dermatoscope images | 0.872 [0.855, 0.887] | 0.621 [0.562, 0.673] | 0.700 | 0.667 |
+| Deployed phone-photo model | 0.598 [0.576, 0.620] | 0.392 [0.364, 0.421] | 0.729 | 0.293 |
+
+The deployed model over-flags dermatoscope images as malignant — it learned PAD-UFES-20's
+case mix (about half malignant). It is a phone-photo model; joint training is next.
+
+**Calibration and abstention** (`pad_ft_effb0_phoneaug__pad_ufes_20_calibration.json`)
+
+Temperature 0.80, fitted on validation; calibration error (ECE) 0.058 → 0.054 on test. The
+demo declines below a triage confidence of **0.64**, chosen on validation so that at least
+90% of malignant cases are flagged or referred. On test it answers 87.1% of images
+[83.2%, 90.4%], is 84.8% accurate on those, and 94.5% of malignant cases [91.0%, 97.6%]
+are flagged malignant or referred to a doctor.
+
+**Known limits.** The phone-photo test set is small and holds few melanomas. The model
+recognises eight lesion types only; scars, wounds and rashes are out of scope and there is
+no dedicated "not a lesion" detector yet. HAM10000 is predominantly light-skinned.
 
 ## What makes this different
 
