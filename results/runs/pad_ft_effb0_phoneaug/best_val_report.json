@@ -1,0 +1,156 @@
+{
+  "macro_f1": 0.6758170610362972,
+  "stage": "full",
+  "epoch": 14,
+  "report": {
+    "accuracy": 0.75,
+    "macro_precision": 0.6520554014486053,
+    "macro_recall": 0.7300572249101661,
+    "macro_f1": 0.6758170610362972,
+    "weighted_recall": 0.75,
+    "weighted_f1": 0.7443344320160573,
+    "n": 308,
+    "per_class": {
+      "nevus": {
+        "precision": 0.75,
+        "recall": 0.825,
+        "f1": 0.7857142857142856,
+        "support": 40
+      },
+      "benign_keratosis": {
+        "precision": 0.75,
+        "recall": 0.7272727272727273,
+        "f1": 0.7384615384615384,
+        "support": 33
+      },
+      "actinic_keratosis": {
+        "precision": 0.8349514563106796,
+        "recall": 0.8686868686868687,
+        "f1": 0.8514851485148516,
+        "support": 99
+      },
+      "basal_cell_carcinoma": {
+        "precision": 0.7916666666666666,
+        "recall": 0.7450980392156863,
+        "f1": 0.7676767676767677,
+        "support": 102
+      },
+      "squamous_cell_carcinoma": {
+        "precision": 0.2857142857142857,
+        "recall": 0.21428571428571427,
+        "f1": 0.24489795918367344,
+        "support": 28
+      },
+      "melanoma": {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6666666666666666,
+        "support": 6
+      },
+      "vascular": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0
+      },
+      "dermatofibroma": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0
+      }
+    },
+    "confusion_matrix": [
+      [
+        33,
+        3,
+        0,
+        3,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        5,
+        24,
+        1,
+        0,
+        0,
+        3,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        86,
+        5,
+        6,
+        1,
+        0,
+        0
+      ],
+      [
+        6,
+        3,
+        7,
+        76,
+        9,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        9,
+        12,
+        6,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        6,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "class_names": [
+      "nevus",
+      "benign_keratosis",
+      "actinic_keratosis",
+      "basal_cell_carcinoma",
+      "squamous_cell_carcinoma",
+      "melanoma",
+      "vascular",
+      "dermatofibroma"
+    ]
+  }
+}
