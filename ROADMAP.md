@@ -74,3 +74,24 @@ Nothing scheduled. Long runs can sit in Colab unattended. This is the buffer.
 **12 · Write up**
 - [ ] Model card, dataset card, README with real numbers
 - [ ] Report written against measured results
+
+## Block F — everyday skin concerns (ADR 0007, ~8 weeks)
+
+**13 · Data**
+- [ ] Read and record licences: SCIN, Fitzpatrick17k, chosen wound/bite sets
+- [ ] Download and verify; audit class counts, image type (phone / atlas / dermatoscope), skin tones
+- [ ] Two-level label mapping, documented and tested (as `labels.py` does for ISIC)
+- [ ] Grouped splits with no patient or lesion leakage
+
+**14 · Level 1 — what kind of thing is this**
+- [ ] Classes: spot/growth · rash/inflammation · infection · bite/sting · wound/cut/burn/scar · normal skin · not skin
+- [ ] Measure the non-lesion catch rate the unfamiliar-image check could not
+
+**15 · Level 2 — which one**
+- [ ] Existing eight spot/growth types, plus common conditions per group with enough images
+- [ ] Per-class metrics with support counts; low-support classes marked indicative
+
+**16 · Safety layer for the wider scope**
+- [ ] Calibration and abstention per level
+- [ ] Care guidance and urgency tier for every new condition (no drug names), reviewed
+- [ ] Demo wording: "skin spots and growths" no longer describes the scope
