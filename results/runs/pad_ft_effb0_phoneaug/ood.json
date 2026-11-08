@@ -1,0 +1,23 @@
+{
+  "run": "pad_ft_effb0_phoneaug",
+  "fitted_on_train_of": [
+    "pad_ufes_20"
+  ],
+  "keep_target": 0.95,
+  "threshold": 2734.7045324570545,
+  "feature_dim": 1280,
+  "class_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "val_rejected": 0.05194805194805195,
+  "test_rejected": {
+    "pad_ufes_20": 0.036036036036036036,
+    "ham10000": 0.1461352657004831
+  },
+  "not_measured": "share of scars, rashes or non-skin photos caught -- needs a labelled set of non-lesion images"
+}
