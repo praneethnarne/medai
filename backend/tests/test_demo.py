@@ -87,3 +87,25 @@ def test_phone_capture_keeps_size_and_mode():
     aug = PhoneCapture(1, 1, 1, 1)
     out = aug(img)
     assert out.size == img.size and out.mode == "RGB"
+
+
+def _write_ood(run_dir, threshold):
+    import numpy as np
+    np.savez_compressed(run_dir / "ood.npz", means=np.zeros((2, 1280), dtype=np.float32),
+                        precision=np.eye(1280, dtype=np.float32), threshold=threshold)
+
+
+def test_unfamiliar_image_is_flagged_and_abstains(fake_run):
+    import numpy as np
+    from PIL import Image
+
+    from demo.inference import load_run, predict
+
+    img = Image.fromarray(np.full((224, 224, 3), 128, dtype=np.uint8))
+    _write_ood(fake_run, threshold=-1.0)           # everything is "far"
+    pred = predict(load_run(fake_run), img, threshold=0.0)
+    assert pred.unfamiliar and pred.abstained and pred.ood_score is not None
+
+    _write_ood(fake_run, threshold=1e12)           # nothing is "far"
+    pred = predict(load_run(fake_run), img, threshold=0.0)
+    assert not pred.unfamiliar and not pred.abstained

@@ -67,6 +67,18 @@ def _model_facts(run_dir: pathlib.Path) -> str:
     else:
         lines.append("**Not calibrated:** confidence scores are raw model output.")
 
+    ood = run_dir / "ood.json"
+    if ood.exists():
+        o = json.loads(ood.read_text())
+        rej = ", ".join(f"{k} {v:.0%}" for k, v in o["test_rejected"].items())
+        lines.append(
+            f"**Unfamiliar-image check:** on. Set so {1 - o['val_rejected']:.0%} of real "
+            f"validation lesions pass. Test images flagged as unfamiliar: {rej}. "
+            f"How many scars, rashes or non-skin photos it catches has not been measured."
+        )
+    else:
+        lines.append("**Unfamiliar-image check:** off (no ood.npz for this run).")
+
     lines.append(
         f"\nTraining images: **{'smartphone photos' if config['collection'] == 'pad_ufes_20' else 'dermatoscope images'}**"
         + ("" if config.get("init_from") is None else " (starting from a model pretrained on dermatoscope images)")
@@ -75,7 +87,14 @@ def _model_facts(run_dir: pathlib.Path) -> str:
     return "\n\n".join(lines)
 
 
+NOT_APPLICABLE = "_Scar, wound, rash or bite? This result does not apply -- see the note at the top._"
+
+
 def _guidance_md(pred, threshold: float) -> str:
+    if pred.unfamiliar:
+        u = care.UNFAMILIAR
+        return (f"## {u['label']}\n\n{u['note']}\n\n_{SCOPE_NOTE}_"
+                f"\n\n---\n_{care.DISCLAIMER}_")
     if pred.abstained:
         u = care.UNSURE
         return (f"## {u['label']}\n\n{u['note']}\n\n"
@@ -88,7 +107,8 @@ def _guidance_md(pred, threshold: float) -> str:
     parts = [
         f"## {u['label']}",
         u["note"],
-        f"### Most likely: {display_name(pred.top_type)} ({pred.top_prob:.0%})",
+        NOT_APPLICABLE,
+        f"### If this is a skin lesion, it looks most like: {display_name(pred.top_type)} ({pred.top_prob:.0%})",
         f"_{c['plain']}_",
         f"**What it is.** {c['what_it_is']}",
         f"**When to get it checked.** {c['seek_care']}",
@@ -112,6 +132,12 @@ def build_app(run_dir: pathlib.Path, threshold: float | None) -> gr.Blocks:
         pred = predict(run, image, thr)
         types = {display_name(k): v for k, v in pred.probs.items()}
         triage = {k.capitalize(): v for k, v in pred.triage_probs.items()}
+        if pred.unfamiliar:
+            # Nothing about lesion types is shown: the guess would be meaningless.
+            return (pred.heatmap,
+                    gr.Label(value="Image not recognised", label="Triage"),
+                    gr.Label(value=None, label="Lesion type (not shown -- image not recognised)"),
+                    _guidance_md(pred, thr))
         if pred.abstained:
             # Never headline a verdict the guidance below has just withheld:
             # a large "Benign" over "please see a doctor" reads as reassurance.

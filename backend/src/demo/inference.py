@@ -34,6 +34,7 @@ class LoadedRun:
     target_layer: torch.nn.Module
     temperature: float = 1.0          # from calibration.json, 1.0 if uncalibrated
     threshold: float | None = None    # calibrated abstention threshold, if any
+    ood: dict | None = None           # from ood.npz: means, precision, threshold
 
 
 def _pick_device() -> torch.device:
@@ -76,8 +77,14 @@ def load_run(run_dir: str | pathlib.Path, device: torch.device | None = None) ->
     if cal.exists():
         c = json.loads(cal.read_text())
         temperature, threshold = float(c["temperature"]), float(c["threshold"])
+    ood = None
+    if (run_dir / "ood.npz").exists():
+        z = np.load(run_dir / "ood.npz")
+        ood = {"means": z["means"].astype(np.float64),
+               "precision": z["precision"].astype(np.float64),
+               "threshold": float(z["threshold"])}
     return LoadedRun(model, class_names, arch, config["run_id"], device,
-                     _target_layer(model, arch), temperature, threshold)
+                     _target_layer(model, arch), temperature, threshold, ood)
 
 
 _EVAL_TF = build_transforms(train=False)
@@ -150,13 +157,28 @@ class Prediction:
     abstained: bool
     heatmap: Image.Image
     view: Image.Image
+    unfamiliar: bool = False          # failed the "does this look like a lesion I know" check
+    ood_score: float | None = None
 
 
 def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
     x, view = preprocess(image)
-    with torch.no_grad():
-        logits = run.model(x.to(run.device)) / run.temperature
-        p = torch.softmax(logits, dim=1)[0].cpu().numpy()
+    store: dict = {}
+    hook = run.model.avgpool.register_forward_hook(
+        lambda _m, _i, out: store.__setitem__("f", torch.flatten(out, 1)))
+    try:
+        with torch.no_grad():
+            logits = run.model(x.to(run.device)) / run.temperature
+            p = torch.softmax(logits, dim=1)[0].cpu().numpy()
+    finally:
+        hook.remove()
+
+    unfamiliar, ood_score = False, None
+    if run.ood is not None:
+        f = store["f"][0].cpu().numpy().astype(np.float64)
+        d = f[None, :] - run.ood["means"]
+        ood_score = float(np.einsum("kd,de,ke->k", d, run.ood["precision"], d).min())
+        unfamiliar = ood_score > run.ood["threshold"]
 
     order = np.argsort(-p)
     probs = {run.class_names[i]: float(p[i]) for i in order}
@@ -176,9 +198,11 @@ def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
         top_type=run.class_names[top],
         top_prob=float(p[top]),
         triage_probs=dict(sorted(triage.items(), key=lambda kv: -kv[1])),
-        abstained=top_triage < threshold,
+        abstained=unfamiliar or top_triage < threshold,
         heatmap=overlay(view, cam),
         view=view,
+        unfamiliar=unfamiliar,
+        ood_score=ood_score,
     )
 
 

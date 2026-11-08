@@ -38,6 +38,17 @@ URGENCY = {
     },
 }
 
+# Shown when the image does not look like any lesion the model was trained on.
+UNFAMILIAR = {
+    "label": "I don't recognise this image",
+    "note": (
+        "This photo does not look like the skin lesions MEdAI was trained on, so it "
+        "gives no answer. It may be a scar, wound, rash, bite, another skin condition, "
+        "or a photo that is too blurred, dark or far away. If you are worried about "
+        "it, show it to a doctor."
+    ),
+}
+
 # Shown when the model declines to answer.
 UNSURE = {
     "label": "No confident answer -- please see a doctor",
