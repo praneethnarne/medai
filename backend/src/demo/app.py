@@ -24,10 +24,17 @@ from demo.inference import display_name, load_run, predict  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 
-# Placeholder, NOT a calibrated value. Calibration and a threshold chosen
-# against a target melanoma recall are roadmap item 5. Until then the demo says
-# so on screen.
-DEFAULT_THRESHOLD = 0.5
+# Used only when the run has no calibration.json. A calibrated run supplies its
+# own threshold, chosen on validation data by eval/calibrate.py.
+UNCALIBRATED_THRESHOLD = 0.5
+
+SCOPE_NOTE = (
+    "MEdAI only recognises eight kinds of skin lesion: mole, benign keratosis, "
+    "actinic keratosis, basal cell carcinoma, squamous cell carcinoma, melanoma, "
+    "vascular lesion and dermatofibroma. Scars, wounds, rashes, insect bites and "
+    "other skin conditions are outside what it can judge -- its answer on them "
+    "means nothing."
+)
 
 
 def _model_facts(run_dir: pathlib.Path) -> str:
@@ -45,13 +52,25 @@ def _model_facts(run_dir: pathlib.Path) -> str:
     else:
         lines.append("**Validation metrics:** not available yet (training not finished)")
 
-    for path in sorted(run_dir.glob("eval_*.json")):
-        lines.append(f"**Evaluation file:** `{path.name}`")
+    cal = run_dir / "calibration.json"
+    if cal.exists():
+        c = json.loads(cal.read_text())
+        t = c["test"]
+        pct = lambda v: "n/a" if v is None else f"{v:.0%}"  # noqa: E731
+        lines.append(
+            f"**Calibrated** on {c['collection']} validation data: temperature "
+            f"{c['temperature']:.2f}, confidence threshold {c['threshold']:.2f}. "
+            f"On the {c['collection']} test set it answered {pct(t['coverage'])} of "
+            f"images, and {pct(t['malignant_caught_or_referred'])} of malignant cases "
+            f"were either flagged malignant or referred."
+        )
+    else:
+        lines.append("**Not calibrated:** confidence scores are raw model output.")
 
     lines.append(
-        "\nTrained on **dermatoscopic** images. Phone photos are a different "
-        "domain, so expect lower accuracy on them until the PAD-UFES-20 "
-        "fine-tune (roadmap item 3) is done."
+        f"\nTraining images: **{'smartphone photos' if config['collection'] == 'pad_ufes_20' else 'dermatoscope images'}**"
+        + ("" if config.get("init_from") is None else " (starting from a model pretrained on dermatoscope images)")
+        + "."
     )
     return "\n\n".join(lines)
 
@@ -60,9 +79,9 @@ def _guidance_md(pred, threshold: float) -> str:
     if pred.abstained:
         u = care.UNSURE
         return (f"## {u['label']}\n\n{u['note']}\n\n"
-                f"_Top guess was {display_name(pred.top_type)} at "
-                f"{pred.top_prob:.0%}, below the {threshold:.0%} confidence "
-                f"threshold._\n\n---\n_{care.DISCLAIMER}_")
+                f"_Top triage score was below the {threshold:.0%} confidence "
+                f"threshold. Top lesion-type guess: {display_name(pred.top_type)} "
+                f"({pred.top_prob:.0%})._\n\n_{SCOPE_NOTE}_\n\n---\n_{care.DISCLAIMER}_")
 
     c = care.CONDITIONS[pred.top_type]
     u = care.URGENCY[c["urgency"]]
@@ -81,8 +100,11 @@ def _guidance_md(pred, threshold: float) -> str:
     return "\n\n".join(parts)
 
 
-def build_app(run_dir: pathlib.Path, threshold: float) -> gr.Blocks:
+def build_app(run_dir: pathlib.Path, threshold: float | None) -> gr.Blocks:
     run = load_run(run_dir)
+    calibrated = run.threshold is not None
+    if threshold is None:
+        threshold = run.threshold if calibrated else UNCALIBRATED_THRESHOLD
 
     def analyse(image, thr):
         if image is None:
@@ -106,13 +128,14 @@ def build_app(run_dir: pathlib.Path, threshold: float) -> gr.Blocks:
 
     with gr.Blocks(title="MEdAI") as app:
         gr.Markdown("# MEdAI\nSkin-lesion screening aid. "
-                    "**A first check, not a diagnosis.**")
+                    "**A first check, not a diagnosis.**\n\n" + SCOPE_NOTE)
         with gr.Row():
             with gr.Column(scale=1):
                 image = gr.Image(type="pil", label="Photo of the skin spot")
-                thr = gr.Slider(0.2, 0.9, value=threshold, step=0.05,
-                                label="Confidence needed to answer "
-                                      "(uncalibrated placeholder)")
+                thr = gr.Slider(0.34, 0.99, value=threshold, step=0.01,
+                                label=("Confidence needed to answer "
+                                       + (f"(calibrated default {run.threshold:.2f})"
+                                          if calibrated else "(uncalibrated placeholder)")))
                 btn = gr.Button("Analyse", variant="primary")
                 with gr.Accordion("About this model", open=False):
                     gr.Markdown(_model_facts(run_dir))
@@ -131,7 +154,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", required=True, help="run id under results/runs/, or a path")
-    ap.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD)
+    ap.add_argument("--threshold", type=float, default=None,
+                    help="override the run's calibrated threshold")
     ap.add_argument("--share", action="store_true", help="create a public gradio.live link")
     ap.add_argument("--port", type=int, default=7860)
     args = ap.parse_args()

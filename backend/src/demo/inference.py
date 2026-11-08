@@ -32,6 +32,8 @@ class LoadedRun:
     run_id: str
     device: torch.device
     target_layer: torch.nn.Module
+    temperature: float = 1.0          # from calibration.json, 1.0 if uncalibrated
+    threshold: float | None = None    # calibrated abstention threshold, if any
 
 
 def _pick_device() -> torch.device:
@@ -69,8 +71,13 @@ def load_run(run_dir: str | pathlib.Path, device: torch.device | None = None) ->
 
     device = device or _pick_device()
     model = model.to(device).eval()
+    temperature, threshold = 1.0, None
+    cal = run_dir / "calibration.json"
+    if cal.exists():
+        c = json.loads(cal.read_text())
+        temperature, threshold = float(c["temperature"]), float(c["threshold"])
     return LoadedRun(model, class_names, arch, config["run_id"], device,
-                     _target_layer(model, arch))
+                     _target_layer(model, arch), temperature, threshold)
 
 
 _EVAL_TF = build_transforms(train=False)
@@ -148,7 +155,8 @@ class Prediction:
 def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
     x, view = preprocess(image)
     with torch.no_grad():
-        p = torch.softmax(run.model(x.to(run.device)), dim=1)[0].cpu().numpy()
+        logits = run.model(x.to(run.device)) / run.temperature
+        p = torch.softmax(logits, dim=1)[0].cpu().numpy()
 
     order = np.argsort(-p)
     probs = {run.class_names[i]: float(p[i]) for i in order}
@@ -160,12 +168,15 @@ def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
         triage[level] = triage.get(level, 0.0) + prob
 
     cam = grad_cam(run, x, top)
+    # Abstain on the triage level -- the answer the user acts on -- matching
+    # how calibrate.py chose the threshold.
+    top_triage = max(triage.values())
     return Prediction(
         probs=probs,
         top_type=run.class_names[top],
         top_prob=float(p[top]),
         triage_probs=dict(sorted(triage.items(), key=lambda kv: -kv[1])),
-        abstained=float(p[top]) < threshold,
+        abstained=top_triage < threshold,
         heatmap=overlay(view, cam),
         view=view,
     )

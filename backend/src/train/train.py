@@ -205,6 +205,8 @@ def main():
     ap.add_argument("--run-name", default=None)
     ap.add_argument("--init-from", default=None,
                     help="checkpoint to start from, for the fine-tune phase")
+    ap.add_argument("--phone-aug", action="store_true",
+                    help="simulate phone capture (colour cast, blur, low resolution, JPEG) in training")
     ap.add_argument("--resume", action="store_true",
                     help="continue an interrupted run from its last.pt, restoring "
                          "optimizer and scheduler state so the schedule is unbroken")
@@ -213,7 +215,8 @@ def main():
     set_seed(args.seed)
     device = pick_device()
 
-    train_ds = ISICDataset(args.collection, "train", target=args.target)
+    train_ds = ISICDataset(args.collection, "train", target=args.target,
+                           phone_aug=args.phone_aug)
     val_ds = ISICDataset(args.collection, "val", target=args.target)
     class_names = list(train_ds.classes)
 

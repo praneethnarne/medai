@@ -67,3 +67,23 @@ def test_abstains_below_threshold(fake_run):
     img = Image.fromarray(np.zeros((224, 224, 3), dtype=np.uint8))
     assert predict(run, img, threshold=1.01).abstained
     assert not predict(run, img, threshold=0.0).abstained
+
+
+def test_calibration_file_sets_temperature_and_threshold(fake_run):
+    from demo.inference import load_run
+
+    (fake_run / "calibration.json").write_text(json.dumps({"temperature": 1.7, "threshold": 0.62}))
+    run = load_run(fake_run)
+    assert run.temperature == 1.7 and run.threshold == 0.62
+
+
+def test_phone_capture_keeps_size_and_mode():
+    import numpy as np
+    from PIL import Image
+
+    from data.dataset import PhoneCapture
+
+    img = Image.fromarray(np.random.default_rng(0).integers(0, 255, (300, 400, 3), dtype=np.uint8))
+    aug = PhoneCapture(1, 1, 1, 1)
+    out = aug(img)
+    assert out.size == img.size and out.mode == "RGB"

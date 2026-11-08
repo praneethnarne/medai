@@ -9,12 +9,15 @@ Targets come from `labels`: triage (primary) and lesion type (secondary).
 
 from __future__ import annotations
 
+import io
 import json
 import pathlib
+import random
 from typing import Literal
 
+import numpy as np
 import torch
-from PIL import Image
+from PIL import Image, ImageFilter
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -30,15 +33,47 @@ STD = (0.229, 0.224, 0.225)
 IMAGE_SIZE = 224
 
 
-def build_transforms(train: bool, image_size: int = IMAGE_SIZE):
-    """Geometry and colour jitter only.
+class PhoneCapture:
+    """Simulate what a phone camera does to a skin photo.
 
-    Phone-capture augmentation (blur, white balance, JPEG artefacts) belongs to
-    the cross-domain phase and is deliberately not here: the baseline has to be
-    measured before we start changing what it sees.
+    Each effect is applied independently at random: a white-balance cast
+    (per-channel gain), focus blur, loss of resolution (down- then up-scale),
+    and JPEG compression. Off by default -- it is a hypothesis to be tested
+    against a run without it, not an assumed improvement.
+    """
+
+    def __init__(self, p_cast=0.7, p_blur=0.5, p_lowres=0.4, p_jpeg=0.7):
+        self.p_cast, self.p_blur, self.p_lowres, self.p_jpeg = p_cast, p_blur, p_lowres, p_jpeg
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        if random.random() < self.p_cast:
+            arr = np.asarray(img, dtype=np.float32)
+            gains = np.array([random.uniform(0.85, 1.15) for _ in range(3)], dtype=np.float32)
+            img = Image.fromarray(np.clip(arr * gains, 0, 255).astype(np.uint8))
+        if random.random() < self.p_blur:
+            img = img.filter(ImageFilter.GaussianBlur(radius=random.uniform(0.3, 1.8)))
+        if random.random() < self.p_lowres:
+            w, h = img.size
+            f = random.uniform(0.3, 0.8)
+            img = img.resize((max(1, int(w * f)), max(1, int(h * f))), Image.BILINEAR).resize((w, h), Image.BILINEAR)
+        if random.random() < self.p_jpeg:
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=random.randint(30, 85))
+            buf.seek(0)
+            with Image.open(buf) as j:
+                img = j.convert("RGB")
+        return img
+
+
+def build_transforms(train: bool, image_size: int = IMAGE_SIZE, phone_aug: bool = False):
+    """Geometry and colour jitter, plus phone-capture effects when asked.
+
+    The baseline was measured without phone augmentation; it is switched on
+    per run (--phone-aug) so its effect can be measured rather than assumed.
     """
     if train:
         return transforms.Compose([
+            *([PhoneCapture(), transforms.RandomPerspective(0.2, p=0.3)] if phone_aug else []),
             transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0), ratio=(0.85, 1.18)),
             transforms.RandomHorizontalFlip(),
             transforms.RandomVerticalFlip(),
@@ -69,6 +104,7 @@ class ISICDataset(Dataset):
         target: Literal["triage", "lesion_type"] = "triage",
         image_size: int = IMAGE_SIZE,
         shared_types_only: bool = False,
+        phone_aug: bool = False,
     ):
         base = ROOT / "data" / collection
         records = json.loads((base / "metadata.json").read_text())
@@ -86,7 +122,8 @@ class ISICDataset(Dataset):
             and (not shared_types_only or labels.is_shared_type(r))
         ]
         self.images = base / "images"
-        self.transform = build_transforms(train=(split == "train"), image_size=image_size)
+        self.transform = build_transforms(train=(split == "train"), image_size=image_size,
+                                          phone_aug=phone_aug and split == "train")
 
     def label_of(self, record) -> str:
         return (labels.triage_of(record) if self.target == "triage"
