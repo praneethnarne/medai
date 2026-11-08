@@ -1,0 +1,175 @@
+"""Load a trained run, classify one image, and explain it with Grad-CAM.
+
+Kept free of any UI code so it can be tested and reused by the API later.
+
+    model = load_run("results/runs/ham_effb0_colab")
+    result = predict(model, pil_image)
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+import sys
+from dataclasses import dataclass
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+import numpy as np  # noqa: E402
+import torch  # noqa: E402
+from PIL import Image  # noqa: E402
+
+from data.dataset import build_transforms  # noqa: E402
+from data.labels import DISPLAY_NAMES, triage_of_type  # noqa: E402
+from train.train import ARCHS  # noqa: E402
+
+
+@dataclass
+class LoadedRun:
+    model: torch.nn.Module
+    class_names: list[str]
+    arch: str
+    run_id: str
+    device: torch.device
+    target_layer: torch.nn.Module
+
+
+def _pick_device() -> torch.device:
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
+def _target_layer(model: torch.nn.Module, arch: str) -> torch.nn.Module:
+    """The last convolutional block: highest-level features that still have a
+    spatial layout, which is what Grad-CAM needs."""
+    if arch.startswith(("efficientnet", "mobilenet")):
+        return model.features[-1]
+    return model.layer4[-1]  # resnet
+
+
+def load_run(run_dir: str | pathlib.Path, device: torch.device | None = None) -> LoadedRun:
+    run_dir = pathlib.Path(run_dir)
+    config = json.loads((run_dir / "config.json").read_text())
+    if config["target"] != "lesion_type":
+        raise ValueError("the demo expects a lesion_type run")
+    arch = config["arch"]
+    class_names = config["class_names"]
+
+    builder, _ = ARCHS[arch]
+    model = builder(weights=None)  # weights come from best.pt, no download needed
+    if arch.startswith(("efficientnet", "mobilenet")):
+        model.classifier[-1] = torch.nn.Linear(model.classifier[-1].in_features,
+                                               len(class_names))
+    else:
+        model.fc = torch.nn.Linear(model.fc.in_features, len(class_names))
+    model.load_state_dict(torch.load(run_dir / "best.pt", map_location="cpu"))
+
+    device = device or _pick_device()
+    model = model.to(device).eval()
+    return LoadedRun(model, class_names, arch, config["run_id"], device,
+                     _target_layer(model, arch))
+
+
+_EVAL_TF = build_transforms(train=False)
+
+
+def preprocess(image: Image.Image) -> tuple[torch.Tensor, Image.Image]:
+    """Returns the model input and the exact 224x224 crop the model saw,
+    so the heatmap can be overlaid on the right pixels."""
+    image = image.convert("RGB")
+    x = _EVAL_TF(image).unsqueeze(0)
+    # Undo normalisation to recover the cropped view for display.
+    from data.dataset import MEAN, STD
+    view = x[0].clone()
+    for c in range(3):
+        view[c] = view[c] * STD[c] + MEAN[c]
+    view = (view.clamp(0, 1).permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+    return x, Image.fromarray(view)
+
+
+def grad_cam(run: LoadedRun, x: torch.Tensor, class_idx: int) -> np.ndarray:
+    """Standard Grad-CAM (Selvaraju et al., 2017): weight each channel of the
+    target layer by the mean gradient of the class score, sum, ReLU, normalise.
+    Returns an HxW array in [0, 1] at the input resolution."""
+    store: dict[str, torch.Tensor] = {}
+
+    def fwd_hook(_m, _i, out):
+        store["act"] = out
+        out.register_hook(lambda g: store.__setitem__("grad", g))
+
+    handle = run.target_layer.register_forward_hook(fwd_hook)
+    try:
+        x = x.to(run.device).requires_grad_(False)
+        with torch.enable_grad():
+            logits = run.model(x)
+            run.model.zero_grad(set_to_none=True)
+            logits[0, class_idx].backward()
+    finally:
+        handle.remove()
+
+    act, grad = store["act"][0], store["grad"][0]           # C x h x w
+    weights = grad.mean(dim=(1, 2))                        # C
+    cam = torch.relu((weights[:, None, None] * act).sum(0))
+    cam = torch.nn.functional.interpolate(cam[None, None], size=x.shape[-2:],
+                                          mode="bilinear", align_corners=False)[0, 0]
+    cam = cam - cam.min()
+    if cam.max() > 0:
+        cam = cam / cam.max()
+    return cam.detach().cpu().numpy()
+
+
+def overlay(view: Image.Image, cam: np.ndarray, alpha: float = 0.45) -> Image.Image:
+    """Blend a blue-to-red heatmap over the image (no matplotlib dependency)."""
+    c = np.clip(cam, 0, 1)
+    heat = np.stack([
+        np.clip(1.5 - np.abs(4 * c - 3), 0, 1),   # red   peaks at high values
+        np.clip(1.5 - np.abs(4 * c - 2), 0, 1),   # green peaks in the middle
+        np.clip(1.5 - np.abs(4 * c - 1), 0, 1),   # blue  peaks at low values
+    ], axis=-1)
+    base = np.asarray(view, dtype=np.float32) / 255.0
+    out = (1 - alpha) * base + alpha * heat
+    return Image.fromarray((out * 255).astype(np.uint8))
+
+
+@dataclass
+class Prediction:
+    probs: dict[str, float]        # lesion type -> probability, sorted high to low
+    top_type: str
+    top_prob: float
+    triage_probs: dict[str, float]
+    abstained: bool
+    heatmap: Image.Image
+    view: Image.Image
+
+
+def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
+    x, view = preprocess(image)
+    with torch.no_grad():
+        p = torch.softmax(run.model(x.to(run.device)), dim=1)[0].cpu().numpy()
+
+    order = np.argsort(-p)
+    probs = {run.class_names[i]: float(p[i]) for i in order}
+    top = int(order[0])
+
+    triage: dict[str, float] = {}
+    for name, prob in probs.items():
+        level = triage_of_type(name)
+        triage[level] = triage.get(level, 0.0) + prob
+
+    cam = grad_cam(run, x, top)
+    return Prediction(
+        probs=probs,
+        top_type=run.class_names[top],
+        top_prob=float(p[top]),
+        triage_probs=dict(sorted(triage.items(), key=lambda kv: -kv[1])),
+        abstained=float(p[top]) < threshold,
+        heatmap=overlay(view, cam),
+        view=view,
+    )
+
+
+def display_name(lesion_type: str) -> str:
+    return DISPLAY_NAMES.get(lesion_type, lesion_type)
