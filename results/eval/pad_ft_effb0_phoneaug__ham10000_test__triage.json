@@ -1,0 +1,95 @@
+{
+  "accuracy": 0.5978260869565217,
+  "macro_precision": 0.4118123731109791,
+  "macro_recall": 0.4816818713771515,
+  "macro_f1": 0.39245565685015876,
+  "weighted_recall": 0.5978260869565217,
+  "weighted_f1": 0.6446627686029255,
+  "n": 1656,
+  "per_class": {
+    "benign": {
+      "precision": 0.9066193853427896,
+      "recall": 0.5728155339805825,
+      "f1": 0.7020594965675057,
+      "support": 1339
+    },
+    "indeterminate": {
+      "precision": 0.03571428571428571,
+      "recall": 0.14285714285714285,
+      "f1": 0.05714285714285715,
+      "support": 14
+    },
+    "malignant": {
+      "precision": 0.29310344827586204,
+      "recall": 0.7293729372937293,
+      "f1": 0.4181646168401135,
+      "support": 303
+    }
+  },
+  "confusion_matrix": [
+    [
+      767,
+      47,
+      525
+    ],
+    [
+      4,
+      2,
+      8
+    ],
+    [
+      75,
+      7,
+      221
+    ]
+  ],
+  "class_names": [
+    "benign",
+    "indeterminate",
+    "malignant"
+  ],
+  "bootstrap_95ci": {
+    "n_resamples": 1000,
+    "overall": {
+      "accuracy": [
+        0.5761,
+        0.6202
+      ],
+      "macro_f1": [
+        0.3641,
+        0.4212
+      ],
+      "macro_recall": [
+        0.4241,
+        0.5514
+      ]
+    },
+    "per_class_recall": {
+      "benign": [
+        0.5478,
+        0.5974
+      ],
+      "indeterminate": [
+        0.0,
+        0.3333
+      ],
+      "malignant": [
+        0.6808,
+        0.777
+      ]
+    }
+  },
+  "low_support_classes": [
+    "indeterminate"
+  ],
+  "meta": {
+    "run": "pad_ft_effb0_phoneaug",
+    "trained_on": "pad_ufes_20",
+    "trained_target": "lesion_type",
+    "evaluated_on": "ham10000",
+    "split": "test",
+    "collapsed_to_triage": true,
+    "cross_domain": true,
+    "arch": "efficientnet_b0"
+  }
+}

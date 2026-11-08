@@ -1,0 +1,146 @@
+{
+  "run": "pad_ft_effb0_phoneaug",
+  "collection": "pad_ufes_20",
+  "temperature": 0.8029,
+  "fitted_on": "val",
+  "target_malignant_caught_or_referred": 0.9,
+  "ece_triage": {
+    "before": {
+      "val": 0.0631,
+      "test": 0.0582
+    },
+    "after": {
+      "val": 0.0345,
+      "test": 0.0538
+    }
+  },
+  "reliability_test": {
+    "before": [
+      {
+        "lo": 0.3,
+        "hi": 0.4,
+        "n": 2,
+        "mean_confidence": 0.3686,
+        "accuracy": 1.0
+      },
+      {
+        "lo": 0.4,
+        "hi": 0.5,
+        "n": 16,
+        "mean_confidence": 0.4555,
+        "accuracy": 0.375
+      },
+      {
+        "lo": 0.5,
+        "hi": 0.6,
+        "n": 33,
+        "mean_confidence": 0.5581,
+        "accuracy": 0.6061
+      },
+      {
+        "lo": 0.6,
+        "hi": 0.7,
+        "n": 47,
+        "mean_confidence": 0.66,
+        "accuracy": 0.7021
+      },
+      {
+        "lo": 0.7,
+        "hi": 0.8,
+        "n": 51,
+        "mean_confidence": 0.7533,
+        "accuracy": 0.6471
+      },
+      {
+        "lo": 0.8,
+        "hi": 0.9,
+        "n": 66,
+        "mean_confidence": 0.8515,
+        "accuracy": 0.9394
+      },
+      {
+        "lo": 0.9,
+        "hi": 1.0,
+        "n": 118,
+        "mean_confidence": 0.9488,
+        "accuracy": 0.9661
+      }
+    ],
+    "after": [
+      {
+        "lo": 0.4,
+        "hi": 0.5,
+        "n": 12,
+        "mean_confidence": 0.4548,
+        "accuracy": 0.5833
+      },
+      {
+        "lo": 0.5,
+        "hi": 0.6,
+        "n": 20,
+        "mean_confidence": 0.5374,
+        "accuracy": 0.65
+      },
+      {
+        "lo": 0.6,
+        "hi": 0.7,
+        "n": 35,
+        "mean_confidence": 0.6556,
+        "accuracy": 0.6857
+      },
+      {
+        "lo": 0.7,
+        "hi": 0.8,
+        "n": 49,
+        "mean_confidence": 0.7552,
+        "accuracy": 0.6531
+      },
+      {
+        "lo": 0.8,
+        "hi": 0.9,
+        "n": 60,
+        "mean_confidence": 0.8548,
+        "accuracy": 0.75
+      },
+      {
+        "lo": 0.9,
+        "hi": 1.0,
+        "n": 157,
+        "mean_confidence": 0.9631,
+        "accuracy": 0.9745
+      }
+    ]
+  },
+  "threshold": 0.64,
+  "threshold_meets_target_on_val": true,
+  "val": {
+    "coverage": 0.8538961038961039,
+    "accuracy_on_answered": 0.8973384030418251,
+    "malignant_caught_or_referred": 0.9117647058823529,
+    "malignant_recall_if_always_answering": 0.8308823529411765,
+    "n": 308,
+    "n_malignant": 136
+  },
+  "test": {
+    "coverage": 0.8708708708708709,
+    "accuracy_on_answered": 0.8482758620689655,
+    "malignant_caught_or_referred": 0.9447852760736196,
+    "malignant_recall_if_always_answering": 0.9079754601226994,
+    "n": 333,
+    "n_malignant": 163
+  },
+  "test_ci95": {
+    "coverage": [
+      0.8318,
+      0.9039
+    ],
+    "malignant_caught_or_referred": [
+      0.9096,
+      0.9763
+    ],
+    "accuracy_on_answered": [
+      0.8105,
+      0.8878
+    ]
+  }
+}
