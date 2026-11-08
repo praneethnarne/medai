@@ -90,7 +90,19 @@ def build_app(run_dir: pathlib.Path, threshold: float) -> gr.Blocks:
         pred = predict(run, image, thr)
         types = {display_name(k): v for k, v in pred.probs.items()}
         triage = {k.capitalize(): v for k, v in pred.triage_probs.items()}
-        return pred.heatmap, triage, types, _guidance_md(pred, thr)
+        if pred.abstained:
+            # Never headline a verdict the guidance below has just withheld:
+            # a large "Benign" over "please see a doctor" reads as reassurance.
+            return (pred.heatmap,
+                    gr.Label(value="Not confident -- see a doctor",
+                             label="Triage"),
+                    gr.Label(value=types,
+                             label="Lesion type (top guesses, below the confidence threshold)"),
+                    _guidance_md(pred, thr))
+        return (pred.heatmap,
+                gr.Label(value=triage, label="Triage"),
+                gr.Label(value=types, label="Lesion type"),
+                _guidance_md(pred, thr))
 
     with gr.Blocks(title="MEdAI") as app:
         gr.Markdown("# MEdAI\nSkin-lesion screening aid. "
