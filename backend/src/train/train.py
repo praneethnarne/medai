@@ -189,7 +189,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--collection", default="ham10000")
-    ap.add_argument("--target", default="lesion_type", choices=["triage", "lesion_type"])
+    ap.add_argument("--target", default="lesion_type", choices=["triage", "lesion_type", "group"],
+                    help="group = Level 1 (spot/growth, rash, infection, bite/sting, wound/scar) "
+                         "on PAD-UFES-20 + SCIN phone photos; --collection is then ignored")
     ap.add_argument("--arch", default="efficientnet_b0", choices=sorted(ARCHS))
     ap.add_argument("--epochs-head", type=int, default=5)
     ap.add_argument("--epochs-full", type=int, default=15)
@@ -215,9 +217,15 @@ def main():
     set_seed(args.seed)
     device = pick_device()
 
-    train_ds = ISICDataset(args.collection, "train", target=args.target,
-                           phone_aug=args.phone_aug)
-    val_ds = ISICDataset(args.collection, "val", target=args.target)
+    if args.target == "group":
+        from data.group_dataset import GroupDataset
+        args.collection = "groups"
+        train_ds = GroupDataset("train", phone_aug=args.phone_aug)
+        val_ds = GroupDataset("val")
+    else:
+        train_ds = ISICDataset(args.collection, "train", target=args.target,
+                               phone_aug=args.phone_aug)
+        val_ds = ISICDataset(args.collection, "val", target=args.target)
     class_names = list(train_ds.classes)
 
     run_id = args.run_name or (f"{args.collection}_{args.target}_{args.arch}_"

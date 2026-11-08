@@ -35,6 +35,7 @@ class LoadedRun:
     temperature: float = 1.0          # from calibration.json, 1.0 if uncalibrated
     threshold: float | None = None    # calibrated abstention threshold, if any
     ood: dict | None = None           # from ood.npz: means, precision, threshold
+    target: str = "lesion_type"       # "lesion_type" (Level 2 spots) or "group" (Level 1)
 
 
 def _pick_device() -> torch.device:
@@ -56,8 +57,8 @@ def _target_layer(model: torch.nn.Module, arch: str) -> torch.nn.Module:
 def load_run(run_dir: str | pathlib.Path, device: torch.device | None = None) -> LoadedRun:
     run_dir = pathlib.Path(run_dir)
     config = json.loads((run_dir / "config.json").read_text())
-    if config["target"] != "lesion_type":
-        raise ValueError("the demo expects a lesion_type run")
+    if config["target"] not in ("lesion_type", "group"):
+        raise ValueError("the demo expects a lesion_type or group run")
     arch = config["arch"]
     class_names = config["class_names"]
 
@@ -84,7 +85,7 @@ def load_run(run_dir: str | pathlib.Path, device: torch.device | None = None) ->
                "precision": z["precision"].astype(np.float64),
                "threshold": float(z["threshold"])}
     return LoadedRun(model, class_names, arch, config["run_id"], device,
-                     _target_layer(model, arch), temperature, threshold, ood)
+                     _target_layer(model, arch), temperature, threshold, ood, config["target"])
 
 
 _EVAL_TF = build_transforms(train=False)
@@ -161,8 +162,8 @@ class Prediction:
     ood_score: float | None = None
 
 
-def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
-    x, view = preprocess(image)
+def _forward(run: LoadedRun, x: torch.Tensor) -> tuple[np.ndarray, bool, float | None]:
+    """Calibrated probabilities, plus the familiarity check on the same forward pass."""
     store: dict = {}
     hook = run.model.avgpool.register_forward_hook(
         lambda _m, _i, out: store.__setitem__("f", torch.flatten(out, 1)))
@@ -179,6 +180,12 @@ def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
         d = f[None, :] - run.ood["means"]
         ood_score = float(np.einsum("kd,de,ke->k", d, run.ood["precision"], d).min())
         unfamiliar = ood_score > run.ood["threshold"]
+    return p, unfamiliar, ood_score
+
+
+def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
+    x, view = preprocess(image)
+    p, unfamiliar, ood_score = _forward(run, x)
 
     order = np.argsort(-p)
     probs = {run.class_names[i]: float(p[i]) for i in order}
@@ -202,6 +209,34 @@ def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
         heatmap=overlay(view, cam),
         view=view,
         unfamiliar=unfamiliar,
+        ood_score=ood_score,
+    )
+
+
+@dataclass
+class GroupPrediction:
+    probs: dict[str, float]        # group -> probability, sorted high to low
+    top_group: str
+    top_prob: float
+    abstained: bool
+    unfamiliar: bool
+    heatmap: Image.Image
+    ood_score: float | None = None
+
+
+def predict_group(run: LoadedRun, image: Image.Image, threshold: float) -> GroupPrediction:
+    """Level 1: what kind of thing is on the skin."""
+    x, view = preprocess(image)
+    p, unfamiliar, ood_score = _forward(run, x)
+    order = np.argsort(-p)
+    top = int(order[0])
+    return GroupPrediction(
+        probs={run.class_names[i]: float(p[i]) for i in order},
+        top_group=run.class_names[top],
+        top_prob=float(p[top]),
+        abstained=unfamiliar or float(p[top]) < threshold,
+        unfamiliar=unfamiliar,
+        heatmap=overlay(view, grad_cam(run, x, top)),
         ood_score=ood_score,
     )
 

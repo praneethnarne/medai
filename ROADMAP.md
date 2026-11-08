@@ -78,13 +78,16 @@ Nothing scheduled. Long runs can sit in Colab unattended. This is the buffer.
 ## Block F — everyday skin concerns (ADR 0007, ~8 weeks)
 
 **13 · Data**
-- [ ] Read and record licences: SCIN, Fitzpatrick17k, chosen wound/bite sets
-- [ ] Download and verify; audit class counts, image type (phone / atlas / dermatoscope), skin tones
-- [ ] Two-level label mapping, documented and tested (as `labels.py` does for ISIC)
-- [ ] Grouped splits with no patient or lesion leakage
+- [x] SCIN licence read (reuse and adaptation allowed; no re-identification) — recorded in `backend/src/data/scin.py`
+- [ ] Fitzpatrick17k and wound/bite sets: licences not yet checked; Fitzpatrick17k image hosts unreachable from the cloud session
+- [x] SCIN download (512 px), audit per group and split (`results/scin_audit.json`); skin-tone audit not yet done
+- [x] Level 1 mapping, condition by condition (`backend/src/data/groups.py`), tested
+- [x] SCIN split by case, stratified by group, committed (`data/scin/splits.json`)
 
 **14 · Level 1 — what kind of thing is this**
-- [ ] Classes: spot/growth · rash/inflammation · infection · bite/sting · wound/cut/burn/scar · normal skin · not skin
+- [x] Training, evaluation (with a SCIN-only shortcut check), calibration and the unfamiliar-image check support the Level 1 model
+- [ ] First Level 1 run on Colab (notebook steps 16–20)
+- [ ] Normal skin and not-skin classes: no labelled source yet
 - [ ] Measure the non-lesion catch rate the unfamiliar-image check could not
 
 **15 · Level 2 — which one**
@@ -93,5 +96,6 @@ Nothing scheduled. Long runs can sit in Colab unattended. This is the buffer.
 
 **16 · Safety layer for the wider scope**
 - [ ] Calibration and abstention per level
-- [ ] Care guidance and urgency tier for every new condition (no drug names), reviewed
-- [ ] Demo wording: "skin spots and growths" no longer describes the scope
+- [x] Care guidance per Level 1 group, no drug names
+- [ ] Guidance and urgency reviewed by the project guide
+- [x] Demo: two-step flow (what kind of thing → which spot or growth), group guidance with emergency signs

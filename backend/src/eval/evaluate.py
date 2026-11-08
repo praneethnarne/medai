@@ -121,7 +121,12 @@ def main():
     model = model.to(device)
 
     eval_target = "triage" if args.collapse_to_triage else trained_target
-    ds = ISICDataset(args.collection, args.split, target=eval_target)
+    if trained_target == "group":
+        from data.group_dataset import GroupDataset
+        args.collection = "groups"
+        ds = GroupDataset(args.split)
+    else:
+        ds = ISICDataset(args.collection, args.split, target=eval_target)
     loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False,
                         num_workers=args.workers)
 
@@ -143,6 +148,12 @@ def main():
     rep["low_support_classes"] = [
         c for c, m in rep["per_class"].items() if 0 < m["support"] < LOW_SUPPORT
     ]
+    if trained_target == "group":
+        # Shortcut check: spot_growth is almost all PAD-UFES-20. Report SCIN alone, where
+        # a "looks like a PAD photo" shortcut cannot help.
+        src = np.asarray(ds.sources)
+        m = src == "scin"
+        rep["scin_only"] = metrics.report(y_true[m], y_pred[m], class_names)
     rep["meta"] = {
         "run": args.run,
         "trained_on": config["collection"],
@@ -166,6 +177,9 @@ def main():
     print(metrics.format_report(rep))
     ci = rep["bootstrap_95ci"]["overall"]
     print(f"\n95% CI  accuracy {ci['accuracy']}  macro F1 {ci['macro_f1']}")
+    if "scin_only" in rep:
+        print("\nSCIN images only (shortcut check -- spot_growth here is not from PAD-UFES-20):\n")
+        print(metrics.format_report(rep["scin_only"]))
     if rep["low_support_classes"]:
         print(f"\nlow support (<{LOW_SUPPORT} examples), treat these as indicative only: "
               f"{', '.join(rep['low_support_classes'])}")

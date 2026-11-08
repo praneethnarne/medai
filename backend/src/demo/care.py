@@ -241,3 +241,124 @@ CONDITIONS = {
         + ["It bleeds heavily or repeatedly without being knocked"],
     },
 }
+
+
+# --- Level 1 groups (ADR 0007) ---------------------------------------------------
+# Shown when the group model's answer is something other than a spot or growth.
+# Same rules as above: no drug names or dosages; emergencies lead; guidance is
+# conditional on a prediction that can be wrong. Urgency per group and the emergency
+# signs below are general first-aid knowledge and need review by the project guide
+# before anyone relies on them.
+
+EMERGENCY = {
+    "label": "Get emergency help now if any of these apply",
+    "signs": [
+        "Swelling of the face, lips, tongue or throat, or trouble breathing or swallowing",
+        "Feeling faint, dizzy or confused, or a racing heartbeat",
+        "A rash that does not fade when a clear glass is pressed against it",
+        "A large burn, or any burn on the face, hands, feet or genitals",
+        "Bleeding that does not stop after 10 minutes of firm pressure",
+    ],
+}
+
+GROUP_GUIDANCE = {
+    "rash": {
+        "urgency": "routine",
+        "plain": "A rash or patch of inflamed skin. Most are harmless and settle, but some need a doctor.",
+        "what_it_is": (
+            "Rashes have many causes: allergies, irritation from something that touched the "
+            "skin, eczema-type conditions, heat, or a reaction to something eaten or taken. "
+            "A photo alone often cannot tell them apart."
+        ),
+        "seek_care": (
+            "See a doctor or pharmacist if it lasts more than a week or two, keeps coming back, "
+            "is spreading, or is stopping you from sleeping."
+        ),
+        "self_care": [
+            "Avoid anything new that touched the skin before it started (soap, cream, plant, fabric)",
+            "Keep the area cool and avoid scratching",
+            "Use plain, unperfumed products on the area",
+            "Photograph it each day so you can show how it changes",
+        ],
+        "red_flags": [
+            "It spreads quickly, blisters, or the skin starts to peel",
+            "You have a fever or feel unwell with it",
+            "It is around the eyes, mouth or genitals",
+        ],
+    },
+    "infection": {
+        "urgency": "prompt",
+        "plain": "It may be a skin infection (fungal, bacterial or viral). These usually need treatment.",
+        "what_it_is": (
+            "Skin infections include fungal patches, infected hair follicles, cold sores, "
+            "shingles, impetigo and others. Many spread to other skin or other people, and "
+            "most clear faster with the right treatment."
+        ),
+        "seek_care": (
+            "See a doctor or pharmacist in the next few days. Go sooner if it is spreading, "
+            "painful, near the eye, or you have a fever."
+        ),
+        "self_care": [
+            "Keep it clean and dry, and avoid touching or scratching it",
+            "Wash your hands after touching it, and don't share towels",
+            "Cover it loosely if it is weeping",
+            "Note when it started and whether it is getting bigger",
+        ],
+        "red_flags": [
+            "Redness spreading outward, or red streaks running from it",
+            "Fever, chills, or feeling generally unwell",
+            "Increasing pain, warmth or swelling, or pus",
+            "Painful blisters in a band on one side of the body or face",
+        ],
+    },
+    "bite_sting": {
+        "urgency": "routine",
+        "plain": "It looks like an insect bite or sting. Most settle on their own within days.",
+        "what_it_is": (
+            "Bites and stings often swell, itch and redden, and some people react with a much "
+            "larger swelling than others. A big local reaction is common and usually not "
+            "dangerous on its own."
+        ),
+        "seek_care": (
+            "See a doctor or pharmacist if it is still getting bigger after two days, looks "
+            "infected, or a ring-shaped rash appears after a tick bite."
+        ),
+        "self_care": [
+            "Wash it with soap and water",
+            "Hold something cold on it (wrapped, not directly on the skin) to ease swelling",
+            "Raise the area if you can, and try not to scratch",
+            "Remove a sting or tick carefully if one is still in the skin",
+        ],
+        "red_flags": [
+            "Redness, warmth or swelling still spreading after 48 hours",
+            "Fever, or feeling unwell after a bite",
+            "A bullseye-shaped rash after a tick bite",
+            "Many bites or stings at once",
+        ],
+    },
+    "wound_scar": {
+        "urgency": "routine",
+        "plain": "It looks like a wound, burn, bruise or scar -- an injury or what it left behind.",
+        "what_it_is": (
+            "Cuts, scrapes, burns and bruises usually heal well on their own when kept clean. "
+            "Scars can stay raised, dark or pink for months while they mature, and that alone "
+            "is not a sign of a problem."
+        ),
+        "seek_care": (
+            "See a doctor for deep or gaping cuts, animal or human bites, dirty wounds (ask "
+            "about tetanus protection), burns that blister or are larger than your palm, or a "
+            "scar that keeps growing, hurts or changes."
+        ),
+        "self_care": [
+            "Rinse a fresh wound with clean running water",
+            "Press firmly with a clean cloth to stop bleeding, then cover it",
+            "Cool a burn under cool running water for 20 minutes; do not use ice",
+            "Keep it clean and check it daily for signs of infection",
+        ],
+        "red_flags": [
+            "Increasing redness, warmth, swelling, pus or pain after the first day or two",
+            "A scar or mark that grows, bleeds or changes colour",
+            "Numbness or trouble moving a nearby finger or joint",
+        ],
+    },
+}
