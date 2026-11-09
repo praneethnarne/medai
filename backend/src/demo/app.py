@@ -24,6 +24,7 @@ import gradio as gr  # noqa: E402
 
 from demo import care  # noqa: E402
 from data.groups import DISPLAY as GROUP_DISPLAY  # noqa: E402
+from demo.api import predict_json  # noqa: E402
 from demo.inference import display_name, load_run, predict, predict_group  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -255,8 +256,20 @@ def build_app(run_dir: pathlib.Path, threshold: float | None,
         guidance = gr.Markdown()
 
         outs = [heat, kind, triage, types, guidance]
-        btn.click(analyse, [image, thr], outs)
-        image.upload(analyse, [image, thr], outs)
+        btn.click(analyse, [image, thr], outs, api_name="analyse")
+        image.upload(analyse, [image, thr], outs, api_visibility="private")
+
+        # JSON endpoint for the React interface (medai-mockup): /predict_json
+        def api_predict(img):
+            if img is None:
+                return {"error": "no image"}
+            return predict_json(run, grun, img, threshold, g_thr)
+
+        with gr.Row(visible=False):
+            api_in = gr.Image(type="pil")
+            api_out = gr.JSON()
+            api_btn = gr.Button()
+        api_btn.click(api_predict, api_in, api_out, api_name="predict_json")
     return app
 
 
@@ -270,6 +283,8 @@ def main() -> int:
                     help="override the run's calibrated threshold")
     ap.add_argument("--share", action="store_true", help="create a public gradio.live link")
     ap.add_argument("--port", type=int, default=7860)
+    ap.add_argument("--host", default="127.0.0.1",
+                    help="0.0.0.0 to accept connections from other devices on the network")
     args = ap.parse_args()
 
     def resolve(r):
@@ -283,7 +298,8 @@ def main() -> int:
             print(f"no best.pt in {d} -- has training saved a checkpoint yet?")
             return 1
 
-    build_app(run_dir, args.threshold, groups_dir).launch(share=args.share, server_port=args.port)
+    build_app(run_dir, args.threshold, groups_dir).launch(
+        share=args.share, server_port=args.port, server_name=args.host)
     return 0
 
 

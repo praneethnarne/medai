@@ -138,3 +138,18 @@ def test_every_group_except_spots_has_guidance():
     assert set(care.GROUP_GUIDANCE) == set(GROUPS) - {"spot_growth"}
     for g in care.GROUP_GUIDANCE.values():
         assert g["urgency"] in care.URGENCY and g["headline"]
+
+
+def test_predict_json_shape(fake_run):
+    import numpy as np
+    from PIL import Image
+
+    from demo.api import CODE, predict_json
+    from demo.inference import load_run
+
+    img = Image.fromarray(np.random.default_rng(1).integers(0, 255, (300, 300, 3), dtype=np.uint8))
+    out = predict_json(load_run(fake_run), None, img, threshold=0.0, group_threshold=0.0)
+    assert out["status"] == "answer" and out["predicted"] in CODE.values()
+    assert set(out["probabilities"]) == set(CODE.values())
+    assert out["heatUrl"].startswith("data:image/png;base64,")
+    assert out["cropUrl"].startswith("data:image/jpeg;base64,")

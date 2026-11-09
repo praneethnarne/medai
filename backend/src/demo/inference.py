@@ -149,6 +149,18 @@ def overlay(view: Image.Image, cam: np.ndarray, alpha: float = 0.45) -> Image.Im
     return Image.fromarray((out * 255).astype(np.uint8))
 
 
+def heat_layer(cam: np.ndarray) -> Image.Image:
+    """The heatmap alone as RGBA, transparent where the model paid no attention --
+    for interfaces that overlay it on the image with their own opacity control."""
+    c = np.clip(cam, 0, 1)
+    rgb = np.stack([np.clip(1.5 - np.abs(4 * c - 3), 0, 1),
+                    np.clip(1.5 - np.abs(4 * c - 2), 0, 1),
+                    np.clip(1.5 - np.abs(4 * c - 1), 0, 1)], axis=-1)
+    alpha = np.clip(c, 0, 1) ** 0.7
+    rgba = np.concatenate([rgb, alpha[..., None]], axis=-1)
+    return Image.fromarray((rgba * 255).astype(np.uint8), mode="RGBA")
+
+
 @dataclass
 class Prediction:
     probs: dict[str, float]        # lesion type -> probability, sorted high to low
@@ -160,6 +172,7 @@ class Prediction:
     view: Image.Image
     unfamiliar: bool = False          # failed the "does this look like a lesion I know" check
     ood_score: float | None = None
+    heat: Image.Image | None = None   # heatmap alone, RGBA
 
 
 def _forward(run: LoadedRun, x: torch.Tensor) -> tuple[np.ndarray, bool, float | None]:
@@ -210,6 +223,7 @@ def predict(run: LoadedRun, image: Image.Image, threshold: float) -> Prediction:
         view=view,
         unfamiliar=unfamiliar,
         ood_score=ood_score,
+        heat=heat_layer(cam),
     )
 
 
@@ -222,6 +236,8 @@ class GroupPrediction:
     unfamiliar: bool
     heatmap: Image.Image
     ood_score: float | None = None
+    heat: Image.Image | None = None
+    view: Image.Image | None = None
 
 
 def predict_group(run: LoadedRun, image: Image.Image, threshold: float) -> GroupPrediction:
@@ -230,14 +246,17 @@ def predict_group(run: LoadedRun, image: Image.Image, threshold: float) -> Group
     p, unfamiliar, ood_score = _forward(run, x)
     order = np.argsort(-p)
     top = int(order[0])
+    cam = grad_cam(run, x, top)
     return GroupPrediction(
         probs={run.class_names[i]: float(p[i]) for i in order},
         top_group=run.class_names[top],
         top_prob=float(p[top]),
         abstained=unfamiliar or float(p[top]) < threshold,
         unfamiliar=unfamiliar,
-        heatmap=overlay(view, grad_cam(run, x, top)),
+        heatmap=overlay(view, cam),
         ood_score=ood_score,
+        heat=heat_layer(cam),
+        view=view,
     )
 
 
