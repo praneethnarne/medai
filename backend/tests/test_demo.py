@@ -109,3 +109,32 @@ def test_unfamiliar_image_is_flagged_and_abstains(fake_run):
     _write_ood(fake_run, threshold=1e12)           # nothing is "far"
     pred = predict(load_run(fake_run), img, threshold=0.0)
     assert not pred.unfamiliar and not pred.abstained
+
+
+def test_group_prediction(tmp_path):
+    torch = pytest.importorskip("torch")
+    import numpy as np
+    from PIL import Image
+    from torchvision import models
+
+    from data.groups import GROUPS
+    from demo.inference import load_run, predict_group
+
+    m = models.efficientnet_b0(weights=None)
+    m.classifier[-1] = torch.nn.Linear(m.classifier[-1].in_features, len(GROUPS))
+    torch.save(m.state_dict(), tmp_path / "best.pt")
+    (tmp_path / "config.json").write_text(json.dumps({
+        "run_id": "g", "arch": "efficientnet_b0", "target": "group",
+        "class_names": list(GROUPS), "collection": "groups", "n_train": 0, "n_val": 0}))
+    gp = predict_group(load_run(tmp_path), Image.new("RGB", (300, 200), (120, 90, 80)), 0.0)
+    assert gp.top_group in GROUPS and abs(sum(gp.probs.values()) - 1) < 1e-4
+    assert not gp.abstained
+
+
+def test_every_group_except_spots_has_guidance():
+    from data.groups import GROUPS
+    from demo import care
+
+    assert set(care.GROUP_GUIDANCE) == set(GROUPS) - {"spot_growth"}
+    for g in care.GROUP_GUIDANCE.values():
+        assert g["urgency"] in care.URGENCY and g["headline"]

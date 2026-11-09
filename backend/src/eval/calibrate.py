@@ -125,13 +125,70 @@ def bootstrap(probs, y, threshold, n=1000, seed=0):
             for k, v in draws.items() if v}
 
 
+def calibrate_group_run(args, run_dir, config, model, device) -> int:
+    """Level 1 (group) model: temperature on group logits, and a threshold chosen on
+    validation as the lowest one at which answered images are right at least
+    --target-accuracy of the time. No single group is "the dangerous one" here, so the
+    target is on the reliability of whatever is answered."""
+    from data.group_dataset import GroupDataset
+
+    names = config["class_names"]
+
+    def logits_for(split):
+        ds = GroupDataset(split)
+        return collect_predictions(model, DataLoader(ds, batch_size=64, num_workers=args.workers), device)
+
+    val_lg, val_y = logits_for("val")
+    test_lg, test_y = logits_for("test")
+    T = fit_temperature(val_lg, val_y)
+
+    def probs(lg, t):
+        return torch.softmax(torch.from_numpy(lg).float() / t, dim=1).numpy()
+
+    def stats(p, y, thr):
+        ans = p.max(1) >= thr
+        return {"coverage": float(ans.mean()),
+                "accuracy_on_answered": float((p.argmax(1)[ans] == y[ans]).mean()) if ans.any() else None,
+                "accuracy_if_always_answering": float((p.argmax(1) == y).mean()),
+                "n": int(len(y))}
+
+    vp, tp = probs(val_lg, T), probs(test_lg, T)
+    thr, met = 0.99, False
+    for t in np.round(np.arange(1 / len(names), 1.0, 0.01), 2):
+        a = stats(vp, val_y, float(t))["accuracy_on_answered"]
+        if a is not None and a >= args.target_accuracy:
+            thr, met = float(t), True
+            break
+    out = {"run": args.run, "task": "group", "temperature": round(T, 4), "fitted_on": "val",
+           "target_accuracy_on_answered": args.target_accuracy, "threshold": thr,
+           "threshold_meets_target_on_val": met,
+           "ece": {"before": {"test": round(ece(probs(test_lg, 1.0), test_y)[0], 4)},
+                   "after": {"test": round(ece(tp, test_y)[0], 4)}},
+           "val": stats(vp, val_y, thr), "test": stats(tp, test_y, thr)}
+    text = json.dumps(out, indent=2) + "\n"
+    (run_dir / "calibration.json").write_text(text)
+    (ROOT / "results" / "eval").mkdir(parents=True, exist_ok=True)
+    (ROOT / "results" / "eval" / f"{args.run}__groups_calibration.json").write_text(text)
+    t = out["test"]
+    print(f"temperature T = {T:.3f}; ECE (test) {out['ece']['before']['test']:.3f} -> {out['ece']['after']['test']:.3f}")
+    print(f"threshold = {thr:.2f}, chosen on val for >= {args.target_accuracy:.0%} accuracy on answered"
+          f"{'' if met else '  (TARGET NOT MET on val -- using 0.99)'}")
+    print(f"TEST n={t['n']}: answers {t['coverage']:.1%}, accuracy on answered "
+          f"{t['accuracy_on_answered'] if t['accuracy_on_answered'] is None else round(t['accuracy_on_answered'], 3)}, "
+          f"accuracy if always answering {t['accuracy_if_always_answering']:.3f}")
+    print(f"\nwrote results/runs/{args.run}/calibration.json")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", required=True)
-    ap.add_argument("--collection", required=True)
+    ap.add_argument("--collection", default=None, help="lesion runs: collection to calibrate on")
     ap.add_argument("--target-recall", type=float, default=0.90,
                     help="share of malignant cases that must be flagged or referred (validation)")
+    ap.add_argument("--target-accuracy", type=float, default=0.90,
+                    help="group runs only: accuracy required on answered validation images")
     ap.add_argument("--workers", type=int, default=2)
     args = ap.parse_args()
 
@@ -147,6 +204,10 @@ def main() -> int:
     model.load_state_dict(torch.load(run_dir / "best.pt", map_location="cpu"))
     device = pick_device()
     model = model.to(device).eval()
+    if config["target"] == "group":
+        return calibrate_group_run(args, run_dir, config, model, device)
+    if not args.collection:
+        raise SystemExit("--collection is required for lesion-type runs")
 
     def logits_for(split):
         ds = ISICDataset(args.collection, split, target="lesion_type")

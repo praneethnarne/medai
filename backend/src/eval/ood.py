@@ -86,7 +86,7 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", required=True)
     ap.add_argument("--fit", nargs="+", default=["pad_ufes_20"],
-                    help="collections whose TRAINING images define 'familiar'")
+                    help="collections whose TRAINING images define 'familiar' ('groups' = PAD-UFES-20 + SCIN)")
     ap.add_argument("--check", nargs="+", default=["pad_ufes_20", "ham10000"],
                     help="collections whose TEST images are scored for the report")
     ap.add_argument("--keep", type=float, default=0.95,
@@ -109,8 +109,13 @@ def main() -> int:
 
     def feats_of(collection, split):
         # eval transforms for every split: we want the features the demo will see
-        ds = ISICDataset(collection, split, target="lesion_type")
-        ds.transform = ISICDataset(collection, "test", target="lesion_type").transform
+        if collection == "groups":
+            from data.group_dataset import GroupDataset
+            ds = GroupDataset(split)
+            ds.transform = GroupDataset("test").transform
+        else:
+            ds = ISICDataset(collection, split, target="lesion_type")
+            ds.transform = ISICDataset(collection, "test", target="lesion_type").transform
         return extract(model, arch, DataLoader(ds, batch_size=64, num_workers=args.workers), device)
 
     tr = [feats_of(c, "train") for c in args.fit]
@@ -139,7 +144,7 @@ def main() -> int:
     (eval_dir / f"{args.run}__ood.json").write_text(text)
 
     print(f"fitted on training images of: {', '.join(args.fit)}")
-    print(f"threshold set so {args.keep:.0%} of validation lesions pass "
+    print(f"threshold set so {args.keep:.0%} of validation images pass "
           f"(actual: {1 - report['val_rejected']:.1%})")
     for c, r in report["test_rejected"].items():
         print(f"  {c:14s} test images flagged as unfamiliar: {r:.1%}")

@@ -20,3 +20,6 @@ data/*/images/
 # Training checkpoints (configs, history and reports are committed)
 results/runs/*/best.pt
 results/runs/*/last.pt
+
+# SCIN raw label tables (re-downloaded by backend/src/data/scin.py)
+data/scin/raw/
