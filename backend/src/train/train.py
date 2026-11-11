@@ -188,7 +188,8 @@ def run_epochs(model, head, loaders, device, class_names, *, epochs, lr,
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--collection", default="ham10000")
+    ap.add_argument("--collection", default="ham10000",
+                    help="one collection, or several joined with + for joint training")
     ap.add_argument("--target", default="lesion_type", choices=["triage", "lesion_type", "group"],
                     help="group = Level 1 (spot/growth, rash, infection, bite/sting, wound/scar) "
                          "on PAD-UFES-20 + SCIN phone photos; --collection is then ignored")
@@ -222,6 +223,12 @@ def main():
         args.collection = "groups"
         train_ds = GroupDataset("train", phone_aug=args.phone_aug)
         val_ds = GroupDataset("val")
+    elif "+" in args.collection:
+        # joint training, e.g. --collection ham10000+pad_ufes_20
+        from data.dataset import JointDataset
+        parts = args.collection.split("+")
+        train_ds = JointDataset(parts, "train", target=args.target, phone_aug=args.phone_aug)
+        val_ds = JointDataset(parts, "val", target=args.target)
     else:
         train_ds = ISICDataset(args.collection, "train", target=args.target,
                                phone_aug=args.phone_aug)
@@ -261,6 +268,7 @@ def main():
         "class_names": class_names,
         "n_train": len(train_ds),
         "n_val": len(val_ds),
+        "sources": getattr(train_ds, "source_counts", lambda: None)(),
         "class_counts": {c: int(n) for c, n in
                          zip(class_names, train_ds.class_counts().tolist())},
         "class_weights": (None if weights is None

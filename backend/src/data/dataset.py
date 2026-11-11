@@ -175,3 +175,44 @@ class ISICDataset(Dataset):
             img = img.convert("RGB")
             tensor = self.transform(img)
         return tensor, self.class_to_idx[self.label_of(record)]
+
+
+class JointDataset(Dataset):
+    """Several collections' copies of one split, pooled -- for joint training.
+
+    Each record keeps its own collection's split assignment (patient- or lesion-
+    level), so pooling never moves a lesion across train / val / test. Class
+    weights are computed on the pooled counts, so HAM10000's benign majority and
+    PAD-UFES-20's malignant majority (the inverted priors) are balanced together.
+    """
+
+    def __init__(self, collections: list[str], split, target="triage", **kw):
+        self.parts = [ISICDataset(c, split, target=target, **kw) for c in collections]
+        self.collection = "+".join(collections)
+        self.split, self.target = split, target
+        self.classes = self.parts[0].classes
+        self.class_to_idx = self.parts[0].class_to_idx
+        self._offsets = []
+        n = 0
+        for part in self.parts:
+            self._offsets.append(n)
+            n += len(part)
+        self._n = n
+
+    def targets(self) -> list[int]:
+        return [t for part in self.parts for t in part.targets()]
+
+    def source_counts(self) -> dict[str, int]:
+        return {part.collection: len(part) for part in self.parts}
+
+    class_counts = ISICDataset.class_counts
+    class_weights = ISICDataset.class_weights
+
+    def __len__(self) -> int:
+        return self._n
+
+    def __getitem__(self, i: int):
+        for part, off in zip(reversed(self.parts), reversed(self._offsets)):
+            if i >= off:
+                return part[i - off]
+        raise IndexError(i)
