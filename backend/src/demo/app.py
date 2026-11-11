@@ -175,13 +175,19 @@ def _groups_facts(groups_dir: pathlib.Path) -> str:
 
 
 def build_app(run_dir: pathlib.Path, threshold: float | None,
-              groups_dir: pathlib.Path | None = None) -> gr.Blocks:
+              groups_dir: pathlib.Path | None = None,
+              derm_dir: pathlib.Path | None = None) -> gr.Blocks:
     run = load_run(run_dir)
     calibrated = run.threshold is not None
     if threshold is None:
         threshold = run.threshold if calibrated else UNCALIBRATED_THRESHOLD
     grun = load_run(groups_dir) if groups_dir else None
     g_thr = (grun.threshold if grun and grun.threshold is not None else UNCALIBRATED_THRESHOLD)
+    # Optional second spots-and-growths model for dermatoscope images. The phone-photo
+    # model over-flags them (malignant precision 0.293 on HAM10000 test), so the
+    # interface can route a photo the user marks as dermatoscopic to this run instead.
+    drun = load_run(derm_dir) if derm_dir else None
+    d_thr = (drun.threshold if drun and drun.threshold is not None else UNCALIBRATED_THRESHOLD)
 
     def lesion_outputs(image, thr):
         pred = predict(run, image, thr)
@@ -270,6 +276,23 @@ def build_app(run_dir: pathlib.Path, threshold: float | None,
             api_out = gr.JSON()
             api_btn = gr.Button()
         api_btn.click(api_predict, api_in, api_out, api_name="predict_json")
+
+        # /predict_json_derm: same shape, answered by the dermatoscope model when one
+        # was given (--derm-run); otherwise an error the interface shows as-is.
+        def api_predict_derm(img):
+            if img is None:
+                return {"error": "no image"}
+            if drun is None:
+                return {"error": "no dermatoscope model on this server (start it with --derm-run)"}
+            out = predict_json(drun, None, img, d_thr, g_thr)
+            out["source"] = "dermatoscope"
+            return out
+
+        with gr.Row(visible=False):
+            derm_in = gr.Image(type="pil")
+            derm_out = gr.JSON()
+            derm_btn = gr.Button()
+        derm_btn.click(api_predict_derm, derm_in, derm_out, api_name="predict_json_derm")
     return app
 
 
@@ -279,6 +302,8 @@ def main() -> int:
     ap.add_argument("--run", required=True, help="spots-and-growths run id under results/runs/, or a path")
     ap.add_argument("--groups-run", default=None,
                     help="optional Level 1 run (what kind of thing) -- see ADR 0007")
+    ap.add_argument("--derm-run", default=None,
+                    help="optional model for dermatoscope images, served at /predict_json_derm")
     ap.add_argument("--threshold", type=float, default=None,
                     help="override the run's calibrated threshold")
     ap.add_argument("--share", action="store_true", help="create a public gradio.live link")
@@ -293,12 +318,13 @@ def main() -> int:
 
     run_dir = resolve(args.run)
     groups_dir = resolve(args.groups_run) if args.groups_run else None
-    for d in [run_dir] + ([groups_dir] if groups_dir else []):
+    derm_dir = resolve(args.derm_run) if args.derm_run else None
+    for d in [run_dir] + [x for x in (groups_dir, derm_dir) if x]:
         if not (d / "best.pt").exists():
             print(f"no best.pt in {d} -- has training saved a checkpoint yet?")
             return 1
 
-    build_app(run_dir, args.threshold, groups_dir).launch(
+    build_app(run_dir, args.threshold, groups_dir, derm_dir).launch(
         share=args.share, server_port=args.port, server_name=args.host)
     return 0
 
